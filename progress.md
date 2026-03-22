@@ -113,6 +113,35 @@
   - day3/frontend/src/App.tsx (Day 3 标题)
   - day3/frontend/package.json (版本 3.0.0)
 
+### Phase 5: Day 4 生成增强
+- **Status:** complete
+- **Started:** 2026-03-22
+- Actions taken:
+  - 后端：CitationService 实现引用提取和置信度评分
+  - 后端：LLMService 添加流式输出支持（SSE）
+  - 后端：增强防幻觉 Prompt 模板
+  - 后端：对话历史管理（限制长度、元数据）
+  - 后端：新增 /chat/stream SSE 流式端点
+  - 后端：新增 /chat/conversations 对话管理端点
+  - 后端：schemas 添加 citation_id、confidence、is_context_based 等字段
+  - 前端：流式显示支持（SSE EventSource）
+  - 前端：可点击的引用标记 [1], [2] 等
+  - 前端：引用详情侧边栏
+  - 前端：置信度评分显示
+  - 前端：流式/非流式模式切换
+  - 代码编译验证通过
+- Files created/modified:
+  - day4/backend/src/services/citation_service.py (引用提取 + 置信度计算)
+  - day4/backend/src/services/llm.py (流式输出 + token 估算)
+  - day4/backend/src/routers/chat.py (流式端点 + 对话管理)
+  - day4/backend/src/models/schemas.py (Day 4 类型)
+  - day4/backend/src/config.py (生成配置参数)
+  - day4/backend/src/main.py (Day 4 版本)
+  - day4/frontend/src/api/client.ts (流式 API + 新类型)
+  - day4/frontend/src/components/ChatInterface.tsx (流式 UI + 引用交互)
+  - day4/frontend/src/App.tsx (Day 4 标题)
+  - day4/frontend/package.json (版本 4.0.0)
+
 ## Daily Progress Plan
 <!--
   每日计划与实际进度对比
@@ -123,7 +152,7 @@
 | Day 1 | 最小化 RAG | complete | 文档上传 + 问答 |
 | Day 2 | 数据预处理增强 | complete | 多格式解析 + 智能分块 |
 | Day 3 | 检索优化 | complete | 混合检索 + 重排序 |
-| Day 4 | 生成增强 | pending | 引用溯源 + 流式输出 |
+| Day 4 | 生成增强 | complete | 引用溯源 + 流式输出 |
 | Day 5 | 评估与监控 | pending | RAGAS + 链路追踪 |
 | Day 6 | 安全与治理 | pending | 认证 + 权限 + 审计 |
 | Day 7 | 生产优化 | pending | Docker + 文档 |
@@ -150,23 +179,23 @@
 -->
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 4: Day 3 检索优化完成 |
-| Where am I going? | Phase 5: Day 4 生成增强 |
+| Where am I? | Phase 5: Day 4 生成增强完成 |
+| Where am I going? | Phase 6: Day 5 评估与监控 |
 | What's the goal? | 创建分阶段 RAG 教程项目，从核心功能到完整系统 |
 | What have I learned? | 见 findings.md |
-| What have I done? | Day 1-3 完成，实现了最小化 RAG + 多格式解析 + 混合检索 |
+| What have I done? | Day 1-4 完成，实现了最小化 RAG + 多格式解析 + 混合检索 + 引用溯源/流式输出 |
 
 ## Next Actions
 <!--
   下一步行动项
 -->
-1. 开始 Day 4 实现：
-   - 引用溯源（Citation）
-   - 流式输出（Streaming）
-   - 防幻觉机制
-   - 对话历史管理
-   - 前端：引用跳转、流式显示
-   - 测试：生成质量验证
+1. 开始 Day 5 实现：
+   - RAGAS 离线评估框架
+   - 检索指标（Recall, Precision, MRR）
+   - 生成指标（Faithfulness, Relevance）
+   - 链路追踪（Request Tracing）
+   - 前端：评估报告展示
+   - 测试：评估流程验证
 
 ---
 *Update after completing each phase or encountering errors*

@@ -12,7 +12,7 @@
 创建一个分阶段的企业级 RAG 系统教程项目，每个阶段（day）独立可运行，展示从核心功能到完整系统的演进过程。
 
 ## Current Phase
-Phase 3: Day 3 实现完成，准备 Day 4
+Phase 4: Day 4 实现完成，准备 Day 5
 
 ## Technology Stack Decisions
 | Component | Choice | Rationale |
@@ -61,14 +61,14 @@ Phase 3: Day 3 实现完成，准备 Day 4
 - **Status:** complete
 - **Goal:** 提升检索准确率，实现混合检索
 
-### Day 4: 生成增强 (Generation Enhancement)
-- [ ] 引用溯源（Citation）
-- [ ] 流式输出（Streaming）
-- [ ] 防幻觉机制（仅基于上下文回答）
-- [ ] 对话历史管理
-- [ ] 前端：引用跳转、流式显示
-- [ ] 测试：生成质量验证
-- **Status:** pending
+### Day 4: 生成增强 (Generation Enhancement) ✅
+- [x] 引用溯源（Citation）
+- [x] 流式输出（Streaming）
+- [x] 防幻觉机制（仅基于上下文回答）
+- [x] 对话历史管理
+- [x] 前端：引用跳转、流式显示
+- [x] 代码编译验证通过
+- **Status:** complete
 - **Goal:** 增强答案可信度，支持引用溯源
 
 ### Day 5: 评估与监控 (Evaluation & Observability)

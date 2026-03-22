@@ -213,5 +213,65 @@ bm25_weight: float = 0.4
 - Display badges showing retrieval method (hybrid/vector/bm25)
 - Show query rewrite indicator with original query
 
+## Day 4 Research: Citation & Streaming Implementation
+/*
+  Day 4 研究：引用溯源与流式输出实现
+  Updated: 2026-03-22
+*/
+### Key Components
+
+1. **CitationService Class**
+   - Extracts citations from answer text using regex
+   - Matches citation IDs [1], [2] to source documents
+   - Calculates confidence score based on citation coverage
+   - Confidence formula: base (0.8 max) + citation_boost (0.3 max) - penalty
+
+2. **LLMService Streaming Support**
+   - generate_response_stream(): AsyncIterator[str] for SSE
+   - Uses LangChain's astream() method
+   - Token estimation: ~4 chars/token (English), ~2 chars/token (Chinese)
+   - Context truncation to fit within token limits
+
+3. **Enhanced Anti-Hallucination Prompt**
+   - Strict rules: ONLY use provided context
+   - Citation instructions: Use [1], [2] format
+   - Fallback: Say "cannot find" if info not in context
+
+4. **Streaming Chat Endpoint (/chat/stream)**
+   - SSE (Server-Sent Events) response format
+   - StreamChunk types: content, sources, done, error
+   - Headers: no-cache, keep-alive, X-Accel-Buffering: no
+
+5. **Conversation Management**
+   - In-memory storage with metadata (created_at, updated_at)
+   - Message limit: MAX_HISTORY_MESSAGES = 20
+   - New endpoints: GET /conversations, GET /conversations/{id}
+
+### Configuration
+```python
+# Day 4 generation settings
+# Day 4 生成设置
+max_context_tokens: int = 3000
+streaming_enabled: bool = True
+max_history_messages: int = 20
+confidence_threshold: float = 0.5
+```
+
+### Frontend Integration
+- Stream toggle: Enable/disable SSE streaming
+- Citation parsing: Replace [1], [2] with clickable buttons
+- Citation panel: Show selected citation details
+- Confidence badge: Color-coded (green >70%, yellow 40-70%, red <40%)
+- Streaming indicator: Blinking cursor animation
+
+### Confidence Score Algorithm
+```
+confidence = min(1.0, base_confidence + citation_boost - lower_confidence)
+where:
+  base_confidence = min(len(sources) / 5, 0.8)
+  citation_boost = min(citations_used / total_sources, 1.0) * 0.3
+  lower_confidence = 0.3 if "cannot find" in answer else 0.0
+```
+
 ---
 *Update this file after every 2 view/browser/search operations*
