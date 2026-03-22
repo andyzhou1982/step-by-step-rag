@@ -349,5 +349,95 @@ metrics_retention_days: int = 30
 "structlog>=24.0.0"         # Structured logging
 ```
 
+## Day 6 Research: Security & Governance Implementation
+/*
+  Day 6 研究：安全与治理实现
+  Updated: 2026-03-22
+*/
+### Key Components
+
+1. **AuthService (JWT Authentication)**
+   - Uses passlib with bcrypt for password hashing
+   - JWT tokens with configurable expiration (default 24 hours)
+   - Role-based user model: admin, user, viewer
+   - In-memory user storage with JSON file persistence (dev mode)
+   - Default admin user created on first run: admin / admin123
+
+2. **PermissionService (ACL)**
+   - Document-level permissions: read, write, admin
+   - Role-based default permissions:
+     - admin: full access
+     - user: read/write
+     - viewer: read only
+   - Permission inheritance via role hierarchy
+   - Methods: grant_permission, revoke_permission, check_permission
+
+3. **AuditService**
+   - Tracks all user actions with timestamps
+   - Action types: login, logout, document operations, permission changes
+   - IP address and user agent tracking
+   - Retention policy: configurable (default 90 days)
+   - Export to JSON/CSV formats
+
+4. **ContentFilterService**
+   - SQL injection detection via regex patterns
+   - XSS attack detection (script tags, javascript:, on* events)
+   - Prompt injection detection for AI inputs
+   - PII detection and masking: emails, phones, credit cards, SSN
+   - Input filtering (blocking) vs output filtering (sanitization)
+
+### Security Configuration
+```python
+# Day 6 security settings
+# Day 6 安全设置
+jwt_secret_key: str = "your-secret-key-change-in-production"
+jwt_algorithm: str = "HS256"
+jwt_expiration_hours: int = 24
+password_min_length: int = 8
+auth_enabled: bool = True
+audit_enabled: bool = True
+content_filter_enabled: bool = True
+audit_log_retention_days: int = 90
+max_login_attempts: int = 5
+```
+
+### API Protection Pattern
+```python
+# Dependency for protected endpoints
+@router.get("/protected")
+async def protected_endpoint(user: User = Depends(get_current_user)):
+    # Only authenticated users can access
+    pass
+
+# Dependency for admin-only endpoints
+@router.get("/admin-only")
+async def admin_endpoint(user: User = Depends(require_role("admin"))):
+    # Only admins can access
+    pass
+```
+
+### Frontend Authentication Flow
+1. Check localStorage for existing token on app load
+2. If no token, show LoginPanel
+3. On login success, store token and user info
+4. Add Authorization header to all API requests
+5. On 401 response, clear token and redirect to login
+
+### Content Filter Patterns
+| Type | Pattern Examples |
+|------|------------------|
+| SQL | SELECT, INSERT, UNION, --, /* |
+| XSS | <script>, javascript:, onerror= |
+| Prompt Injection | ignore previous, pretend to be |
+| PII | email regex, phone regex, credit card regex |
+
+### Dependencies Added
+```toml
+"PyJWT>=2.8.0"              # JWT authentication
+"passlib[bcrypt]>=1.7.4"    # Password hashing
+"python-jose[cryptography]>=3.3.0"  # Enhanced JWT
+"email-validator>=2.1.0"    # Email validation
+```
+
 ---
 *Update this file after every 2 view/browser/search operations*

@@ -172,6 +172,44 @@
   - day5/frontend/package.json (版本 5.0.0)
   - day5/CHANGES.md
 
+### Phase 7: Day 6 安全与治理
+- **Status:** complete
+- **Started:** 2026-03-22
+- Actions taken:
+  - 后端：AuthService 实现 JWT 用户认证（注册、登录、token 管理）
+  - 后端：PermissionService 实现文档级 ACL 权限控制
+  - 后端：AuditService 实现审计日志记录
+  - 后端：ContentFilterService 实现内容过滤（SQL 注入、XSS、提示注入）
+  - 后端：新增 /auth/* 认证 API 端点
+  - 后端：新增 /permissions/* 权限 API 端点
+  - 后端：新增 /audit/* 审计 API 端点
+  - 后端：schemas 添加 User, Permission, AuditLog 等类型
+  - 后端：config.py 添加安全配置参数
+  - 前端：LoginPanel 组件实现登录/注册界面
+  - 前端：AuditPanel 组件实现审计日志展示
+  - 前端：API 客户端添加认证、权限、审计 API 函数
+  - 前端：App.tsx 集成认证流程和审计标签页
+  - 文档：CHANGES.md 核心修改说明
+  - 代码编译验证通过
+- Files created/modified:
+  - day6/backend/src/services/auth_service.py (JWT 认证)
+  - day6/backend/src/services/permission_service.py (ACL 权限)
+  - day6/backend/src/services/audit_service.py (审计日志)
+  - day6/backend/src/services/content_filter_service.py (内容过滤)
+  - day6/backend/src/routers/auth.py (认证 API)
+  - day6/backend/src/routers/permissions.py (权限 API)
+  - day6/backend/src/routers/audit.py (审计 API)
+  - day6/backend/src/models/schemas.py (Day 6 安全类型)
+  - day6/backend/src/config.py (安全配置参数)
+  - day6/backend/src/main.py (Day 6 版本)
+  - day6/backend/pyproject.toml (PyJWT, passlib, python-jose, email-validator)
+  - day6/frontend/src/api/client.ts (认证、权限、审计 API 类型)
+  - day6/frontend/src/components/LoginPanel.tsx (登录面板)
+  - day6/frontend/src/components/AuditPanel.tsx (审计面板)
+  - day6/frontend/src/App.tsx (Day 6 标题 + 认证流程)
+  - day6/frontend/package.json (版本 6.0.0)
+  - day6/CHANGES.md
+
 ## Daily Progress Plan
 <!--
   每日计划与实际进度对比
@@ -184,7 +222,7 @@
 | Day 3 | 检索优化 | complete | 混合检索 + 重排序 |
 | Day 4 | 生成增强 | complete | 引用溯源 + 流式输出 |
 | Day 5 | 评估与监控 | complete | RAGAS + 链路追踪 |
-| Day 6 | 安全与治理 | pending | 认证 + 权限 + 审计 |
+| Day 6 | 安全与治理 | complete | JWT 认证 + ACL 权限 + 审计日志 |
 | Day 7 | 生产优化 | pending | Docker + 文档 |
 
 ## Test Results
@@ -209,23 +247,23 @@
 -->
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 6: Day 5 评估与监控完成 |
-| Where am I going? | Phase 7: Day 6 安全与治理 |
+| Where am I? | Phase 7: Day 6 安全与治理完成 |
+| Where am I going? | Phase 8: Day 7 生产优化 |
 | What's the goal? | 创建分阶段 RAG 教程项目，从核心功能到完整系统 |
 | What have I learned? | 见 findings.md |
-| What have I done? | Day 1-5 完成，实现了最小化 RAG + 多格式解析 + 混合检索 + 引用溯源/流式输出 + 评估/追踪 |
+| What have I done? | Day 1-6 完成，实现了最小化 RAG + 多格式解析 + 混合检索 + 引用溯源/流式输出 + 评估/追踪 + JWT 认证/ACL 权限/审计日志 |
 
 ## Next Actions
 <!--
   下一步行动项
 -->
-1. 开始 Day 6 实现：
-   - JWT 用户认证
-   - 文档级权限控制（ACL）
-   - 审计日志
-   - 输入输出过滤
-   - 前端：登录、权限管理
-   - 测试：安全功能验证
+1. 开始 Day 7 实现：
+   - 性能优化（缓存、连接池）
+   - 错误处理与重试
+   - Docker 部署配置
+   - 完整文档（README 中英文）
+   - API 文档（Swagger）
+   - 最终测试：完整流程验证
 
 ---
 *Update after completing each phase or encountering errors*

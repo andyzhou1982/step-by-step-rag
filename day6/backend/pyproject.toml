@@ -1,0 +1,75 @@
+[project]
+name = "step-by-step-rag"
+version = "6.0.0"
+description = "Step-by-Step RAG Tutorial - Day 6"
+requires-python = ">=3.11"
+
+# Web Framework
+# Web 框架
+dependencies = [
+    "fastapi>=0.135.1",
+    "uvicorn[standard]>=0.42.0",
+    "python-multipart>=0.0.22",
+
+    # LangChain (latest versions)
+    # LangChain（最新版本）
+    "langchain>=1.2.13",
+    "langchain-openai>=1.1.11",
+    "langchain-community>=0.4.1",
+    "langchain-postgres>=0.0.17",
+    "langchain-text-splitters>=1.1.1",
+
+    # Database
+    # 数据库
+    "asyncpg>=0.31.0",
+    "pgvector>=0.3.6",
+
+    # Utilities
+    # 工具
+    "python-dotenv>=1.2.2",
+    "pydantic>=2.12.5",
+    "pydantic-settings>=2.13.1",
+
+    # Document Parsers (Day 2)
+    # 文档解析器（Day 2）
+    "pypdf>=5.0.0",
+    "python-docx>=1.1.0",
+    "beautifulsoup4>=4.12.0",
+    "lxml>=5.0.0",
+    "chardet>=5.2.0",
+
+    # Retrieval Enhancement (Day 3)
+    # 检索增强（Day 3）
+    "rank-bm25>=0.2.2",           # BM25 for hybrid search / BM25 混合检索
+    "numpy>=1.26.0",               # For similarity calculations / 相似度计算
+    "sentence-transformers>=3.0.0", # For re-ranking / 重排序
+
+    # Evaluation & Observability (Day 5)
+    # 评估与可观测性（Day 5）
+    "ragas>=0.2.0",               # RAG evaluation framework / RAG 评估框架
+    "datasets>=3.0.0",            # For Ragas dataset handling / Ragas 数据集处理
+    "tqdm>=4.66.0",               # Progress bars for evaluation / 评估进度条
+    "opentelemetry-api>=1.20.0",  # Tracing API / 追踪 API
+    "opentelemetry-sdk>=1.20.0",  # Tracing SDK / 追踪 SDK
+    "structlog>=24.0.0",          # Structured logging / 结构化日志
+
+    # Security & Governance (Day 6)
+    # 安全与治理（Day 6）
+    "PyJWT>=2.8.0",               # JWT authentication / JWT 认证
+    "passlib[bcrypt]>=1.7.4",     # Password hashing / 密码哈希
+    "python-jose[cryptography]>=3.3.0",  # JWT with extra features / 增强版 JWT
+    "email-validator>=2.1.0",     # Email validation / 邮箱验证
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+# Use Tsinghua mirror for faster downloads
+# 使用清华镜像源加速下载
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
