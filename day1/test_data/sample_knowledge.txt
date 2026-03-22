@@ -1,0 +1,118 @@
+RAG系统介绍
+
+RAG（Retrieval-Augmented Generation，检索增强生成）是一种结合了信息检索和生成式AI的技术。
+它首先从知识库中检索相关文档，然后将这些文档作为上下文，让大语言模型生成更准确的回答。
+
+RAG系统的主要组件包括：
+
+1. 文档处理（Document Processing）
+   - 文档解析：支持PDF、Word、HTML等多种格式
+   - 文本分块：将长文档分割成小块以便检索
+   - 向量化：使用Embedding模型将文本转换为向量
+
+2. 向量存储（Vector Storage）
+   - 存储文档向量和原始文本
+   - 支持相似度搜索
+   - 常用工具有：pgvector、Milvus、Qdrant等
+
+3. 检索（Retrieval）
+   - 根据问题向量搜索最相关的文档
+   - 支持混合检索：向量检索 + 关键词检索
+   - 可以添加重排序提高准确率
+
+4. 生成（Generation）
+   - 将检索结果作为上下文
+   - 使用LLM生成回答
+   - 可以添加引用来源
+
+RAG的优势：
+
+1. 使用最新知识
+   RAG可以访问最新的数据，不受LLM训练截止日期的限制。
+   只需更新知识库，即可获取最新信息。
+
+2. 减少幻觉
+   通过提供真实的上下文文档，RAG可以显著减少LLM产生虚假信息的可能性。
+   模型会基于实际文档内容回答问题。
+
+3. 可追溯来源
+   RAG系统可以显示答案的信息来源，用户可以验证答案的可靠性。
+   这对于需要高可信度的场景特别重要。
+
+4. 更易更新
+   与重新训练模型相比，更新知识库更加简单和经济。
+   只需添加、删除或修改文档即可。
+
+5. 成本效益
+   不需要为每个新知识重新训练模型，节省计算资源和时间。
+
+LangChain框架介绍
+
+LangChain是一个流行的开源框架，专门用于构建LLM应用。它提供了：
+
+1. 文档加载器（Document Loaders）
+   支持多种数据源：PDF、Word、CSV、网页、数据库等
+   常用加载器包括：PyPDFLoader、WebBaseLoader、CSVLoader
+
+2. 文本分割器（Text Splitters）
+   - RecursiveCharacterTextSplitter：递归分割，保持语义完整
+   - CharacterTextSplitter：按字符分割
+   - TokenTextSplitter：按token分割
+
+3. 向量存储（Vector Stores）
+   支持多种后端：pgvector、Chroma、Pinecone、Milvus等
+   提供统一的接口进行存储和检索
+
+4. LLM接口
+   支持OpenAI、Claude、本地模型等
+   提供统一的调用接口
+
+5. Chain和Agent
+   Chain：将多个组件串联成工作流
+   Agent：根据输入动态选择工具和行动
+
+pgvector介绍
+
+pgvector是PostgreSQL的向量数据库扩展，特点包括：
+
+1. 完整的PostgreSQL功能
+   可以在关系数据库中进行向量搜索
+   支持SQL查询和向量查询的混合使用
+
+2. 多种距离度量
+   - L2距离（欧几里得距离）
+   - 内积（Inner Product）
+   - 余弦距离（Cosine Distance）
+
+3. 索引支持
+   - IVFFlat索引：适合大规模数据
+   - HNSW索引：高召回率，快速搜索
+
+4. 易于部署
+   作为PostgreSQL扩展，无需额外服务
+   支持Docker部署
+
+5. 与LangChain集成
+   LangChain提供PGVector类，开箱即用
+
+最佳实践
+
+1. 文档分块策略
+   - 选择合适的chunk_size（通常500-1000字符）
+   - 设置适当的chunk_overlap（通常50-100字符）
+   - 考虑文档结构进行分割
+
+2. Embedding模型选择
+   - text-embedding-3-small：性价比高，适合大多数场景
+   - text-embedding-3-large：更高精度，适合高质量需求
+   - 本地模型：隐私要求高的场景
+
+3. 检索优化
+   - 使用混合检索提高召回率
+   - 添加重排序提高准确率
+   - 调整top_k参数平衡速度和质量
+
+4. Prompt设计
+   - 明确指示模型只使用提供的上下文
+   - 要求模型在不知道答案时诚实说明
+   - 添加引用要求提高可信度

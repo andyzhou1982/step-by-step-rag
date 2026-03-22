@@ -1,0 +1,138 @@
+# Python
+# Python 相关
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+# 虚拟环境
+.venv/
+venv/
+ENV/
+env/
+.env.local
+
+# IDE
+# IDE 相关
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# Environment variables
+# 环境变量文件（包含敏感信息）
+.env
+!.env.example
+
+# Logs
+# 日志文件
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Node.js / Frontend
+# Node.js / 前端相关
+node_modules/
+.pnp
+.pnp.js
+.pnp.cjs
+.pnp.loader.mjs
+
+# Testing
+# 测试相关
+coverage/
+.nyc_output/
+*.lcov
+
+# Frontend build
+# 前端构建输出
+dist/
+dist-ssr/
+*.local
+
+# Cache
+# 缓存
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS generated files
+# 操作系统生成文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# uv lock files (optional, uncomment if you want to exclude)
+# uv 锁文件（可选，如果要排除请取消注释）
+# uv.lock
+
+# Database
+# 数据库文件
+*.db
+*.sqlite3
+*.sqlite
+
+# Uploaded files (runtime)
+# 上传文件（运行时）
+uploads/
+
+# Temporary files
+# 临时文件
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Jupyter notebooks
+# Jupyter 笔记本
+.ipynb_checkpoints/
+
+# Package files
+# 包文件
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Credentials and secrets
+# 凭证和密钥
+*.pem
+*.key
+secrets.json
+credentials.json
+
+
+excute.md
+requirement.md
