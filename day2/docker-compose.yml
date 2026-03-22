@@ -1,0 +1,36 @@
+# Docker Compose configuration for Day 1 RAG system
+# Day 1 RAG 系统的 Docker Compose 配置
+
+version: '3.8'
+
+services:
+  # PostgreSQL with pgvector extension
+  # 带有 pgvector 扩展的 PostgreSQL
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: rag-postgres
+    environment:
+      # Database credentials
+      # 数据库凭据
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rag_db
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persist data
+      # 持久化数据
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # Health check command
+      # 健康检查命令
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  # Named volume for data persistence
+  # 用于数据持久化的命名卷
+  postgres_data:

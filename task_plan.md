@@ -40,14 +40,15 @@ Phase 2: Day 1 实现完成，准备 Day 2
 - **Status:** complete
 - **Goal:** 跑通核心 RAG 流程：上传 → 分块 → 存储 → 检索 → 生成
 
-### Day 2: 数据预处理增强 (Enhanced Preprocessing)
-- [ ] 多格式文档解析（PDF, Word, Markdown）
-- [ ] 智能分块策略（递归字符分块）
-- [ ] 元数据提取与存储
-- [ ] 文档管理 API（列表、删除）
-- [ ] 前端：文档管理界面
-- [ ] 测试：多格式文档处理验证
-- **Status:** pending
+### Day 2: 数据预处理增强 (Enhanced Preprocessing) ✅
+- [x] 多格式文档解析（PDF, Word, Markdown, HTML）
+- [x] 智能分块策略（递归字符分块 + Markdown/HTML 分割器）
+- [x] 元数据提取与存储
+- [x] 文档管理 API（列表、删除、支持的格式）
+- [x] 前端：复用 Day 1 前端
+- [x] 文档：CHANGES.md 核心修改说明
+- [x] 代码编译验证通过
+- **Status:** complete
 - **Goal:** 支持多种文档格式，实现智能分块
 
 ### Day 3: 检索优化 (Retrieval Optimization)
