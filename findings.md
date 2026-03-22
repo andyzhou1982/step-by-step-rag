@@ -163,5 +163,55 @@ except FileNotFoundError as e:
 -->
 - (暂无)
 
+## Day 3 Research: Hybrid Retrieval Implementation
+/*
+  Day 3 研究：混合检索实现
+  Updated: 2026-03-22
+*/
+### Key Components
+1. **BM25Index Class**
+   - Uses rank-bm25 library (BM25Okapi)
+   - Simple tokenization: lowercase + split on whitespace/punctuation
+   - Returns (index, score) pairs for result merging
+
+2. **QueryRewriter Class**
+   - Uses LLM to improve/expand queries
+   - REWRITE_PROMPT: Clarifies terms, adds synonyms
+   - EXPAND_PROMPT: Generates 3 alternative versions
+   - Fallback to original query on failure
+
+3. **ReRanker Class**
+   - Uses embedding similarity for re-ranking (not cross-encoder due to complexity)
+   - Cosine similarity between query and content embeddings
+   - Combined score: 0.3 * original + 0.7 * similarity
+
+4. **HybridRetrievalService**
+   - Configurable weights: 0.6 vector + 0.4 BM25 (default)
+   - Parallel execution: vector search and BM25 in parallel
+   - Score normalization before merging
+   - Optional query rewrite and re-rank steps
+
+### Configuration
+```python
+# Day 3 retrieval settings
+# Day 3 检索设置
+use_hybrid_search: bool = True
+use_query_rewrite: bool = False
+use_rerank: bool = True
+top_k: int = 5
+vector_weight: float = 0.6
+bm25_weight: float = 0.4
+```
+
+### BM25 Index Management
+- Built on startup from existing documents
+- Rebuilt on document upload/delete
+- Non-critical: failures don't block main operations
+
+### Frontend Integration
+- RetrievalConfigPanel with toggles for hybrid/rewrite/rerank
+- Display badges showing retrieval method (hybrid/vector/bm25)
+- Show query rewrite indicator with original query
+
 ---
 *Update this file after every 2 view/browser/search operations*

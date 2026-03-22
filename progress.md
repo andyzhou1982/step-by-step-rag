@@ -65,6 +65,54 @@
   - day1/test_data/sample_knowledge.txt (测试数据)
   - .gitignore
 
+### Phase 3: Day 2 数据预处理增强
+- **Status:** complete
+- **Started:** 2026-03-22
+- Actions taken:
+  - 后端：多格式文档解析器（PDF, Word, Markdown, HTML, TXT）
+  - 后端：LangChain 智能分块策略（递归字符 + Markdown/HTML 分割器）
+  - 后端：元数据提取与存储
+  - 后端：文档管理 API（列表、删除、支持的格式查询）
+  - 前端：复用 Day 1 前端
+  - 文档：CHANGES.md 核心修改说明
+  - 代码编译验证通过
+- Files created/modified:
+  - day2/backend/src/services/document_parser.py (多格式解析器)
+  - day2/backend/src/routers/documents.py (增强版)
+  - day2/backend/src/models/schemas.py (新增元数据模型)
+  - day2/backend/src/services/vector_store.py (支持元数据存储)
+  - day2/backend/src/main.py (Day 2 版本)
+  - day2/backend/pyproject.toml (新增依赖)
+  - day2/CHANGES.md
+
+### Phase 4: Day 3 检索优化
+- **Status:** complete
+- **Started:** 2026-03-22
+- Actions taken:
+  - 后端：BM25Index 类实现关键词搜索
+  - 后端：QueryRewriter 类实现查询重写
+  - 后端：ReRanker 类实现结果重排序
+  - 后端：HybridRetrievalService 实现混合检索服务
+  - 后端：向量存储添加 get_all_documents_for_bm25() 方法
+  - 后端：文档上传/删除后自动重建 BM25 索引
+  - 后端：检索配置 API 端点
+  - 前端：检索配置面板（混合检索、查询重写、重排序开关）
+  - 前端：显示检索方法和查询重写信息
+  - 代码编译验证通过
+- Files created/modified:
+  - day3/backend/src/services/retrieval_service.py (BM25 + 查询重写 + 重排序)
+  - day3/backend/src/services/vector_store.py (添加 BM25 支持方法)
+  - day3/backend/src/routers/documents.py (索引重建)
+  - day3/backend/src/routers/chat.py (检索配置支持)
+  - day3/backend/src/config.py (检索配置参数)
+  - day3/backend/src/models/schemas.py (RetrievalConfig 类型)
+  - day3/backend/src/main.py (启动时构建 BM25 索引)
+  - day3/backend/pyproject.toml (新增 rank-bm25, numpy 依赖)
+  - day3/frontend/src/api/client.ts (检索配置 API 类型)
+  - day3/frontend/src/components/ChatInterface.tsx (检索配置面板)
+  - day3/frontend/src/App.tsx (Day 3 标题)
+  - day3/frontend/package.json (版本 3.0.0)
+
 ## Daily Progress Plan
 <!--
   每日计划与实际进度对比
@@ -72,9 +120,9 @@
 
 | Day | Plan | Status | Key Deliverables |
 |-----|------|--------|------------------|
-| Day 1 | 最小化 RAG | pending | 文档上传 + 问答 |
-| Day 2 | 数据预处理增强 | pending | 多格式解析 + 智能分块 |
-| Day 3 | 检索优化 | pending | 混合检索 + 重排序 |
+| Day 1 | 最小化 RAG | complete | 文档上传 + 问答 |
+| Day 2 | 数据预处理增强 | complete | 多格式解析 + 智能分块 |
+| Day 3 | 检索优化 | complete | 混合检索 + 重排序 |
 | Day 4 | 生成增强 | pending | 引用溯源 + 流式输出 |
 | Day 5 | 评估与监控 | pending | RAGAS + 链路追踪 |
 | Day 6 | 安全与治理 | pending | 认证 + 权限 + 审计 |
@@ -102,25 +150,23 @@
 -->
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 1: 技术栈确认与规划 |
-| Where am I going? | Phase 2: Day 1 最小化 RAG 实现 |
+| Where am I? | Phase 4: Day 3 检索优化完成 |
+| Where am I going? | Phase 5: Day 4 生成增强 |
 | What's the goal? | 创建分阶段 RAG 教程项目，从核心功能到完整系统 |
 | What have I learned? | 见 findings.md |
-| What have I done? | 确认技术栈，创建规划文件 |
+| What have I done? | Day 1-3 完成，实现了最小化 RAG + 多格式解析 + 混合检索 |
 
 ## Next Actions
 <!--
   下一步行动项
 -->
-1. 等待用户确认规划方案
-2. 开始 Day 1 实现：
-   - 创建 day1 目录结构
-   - 实现后端 FastAPI 基础框架
-   - 实现文档上传和分块
-   - 实现向量存储和检索
-   - 实现问答 API
-   - 实现前端界面
-   - 端到端测试
+1. 开始 Day 4 实现：
+   - 引用溯源（Citation）
+   - 流式输出（Streaming）
+   - 防幻觉机制
+   - 对话历史管理
+   - 前端：引用跳转、流式显示
+   - 测试：生成质量验证
 
 ---
 *Update after completing each phase or encountering errors*

@@ -12,7 +12,7 @@
 创建一个分阶段的企业级 RAG 系统教程项目，每个阶段（day）独立可运行，展示从核心功能到完整系统的演进过程。
 
 ## Current Phase
-Phase 2: Day 1 实现完成，准备 Day 2
+Phase 3: Day 3 实现完成，准备 Day 4
 
 ## Technology Stack Decisions
 | Component | Choice | Rationale |
@@ -51,14 +51,14 @@ Phase 2: Day 1 实现完成，准备 Day 2
 - **Status:** complete
 - **Goal:** 支持多种文档格式，实现智能分块
 
-### Day 3: 检索优化 (Retrieval Optimization)
-- [ ] 混合检索（向量 + BM25 关键词）
-- [ ] 查询重写与扩展
-- [ ] 重排序（Cross-Encoder）
-- [ ] 检索参数配置 API
-- [ ] 前端：检索配置与调试界面
-- [ ] 测试：检索效果对比验证
-- **Status:** pending
+### Day 3: 检索优化 (Retrieval Optimization) ✅
+- [x] 混合检索（向量 + BM25 关键词）
+- [x] 查询重写与扩展
+- [x] 重排序（Cross-Encoder）
+- [x] 检索参数配置 API
+- [x] 前端：检索配置与调试界面
+- [x] 代码编译验证通过
+- **Status:** complete
 - **Goal:** 提升检索准确率，实现混合检索
 
 ### Day 4: 生成增强 (Generation Enhancement)
