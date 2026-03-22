@@ -142,6 +142,36 @@
   - day4/frontend/src/App.tsx (Day 4 标题)
   - day4/frontend/package.json (版本 4.0.0)
 
+### Phase 6: Day 5 评估与监控
+- **Status:** complete
+- **Started:** 2026-03-22
+- Actions taken:
+  - 后端：EvaluationService 实现 RAGAS 评估（Faithfulness, Answer Relevance, Context Precision/Recall）
+  - 后端：RetrievalMetricsService 实现检索指标（Recall@K, Precision@K, MRR, NDCG）
+  - 后端：TracingService 实现 OpenTelemetry 请求追踪
+  - 后端：结构化日志（structlog 集成）
+  - 后端：新增 /evaluation/* 评估 API 端点
+  - 后端：schemas 添加 EvaluationMetrics, RetrievalMetrics, EvaluationRequest 等类型
+  - 前端：EvaluationPanel 组件展示评估指标
+  - 前端：API 客户端添加评估 API 函数
+  - 前端：新增评估标签页
+  - 文档：CHANGES.md 核心修改说明
+  - 代码编译验证通过
+- Files created/modified:
+  - day5/backend/src/services/evaluation_service.py (RAGAS 评估)
+  - day5/backend/src/services/metrics_service.py (检索指标)
+  - day5/backend/src/services/tracing_service.py (请求追踪)
+  - day5/backend/src/routers/evaluation.py (评估 API)
+  - day5/backend/src/models/schemas.py (Day 5 评估类型)
+  - day5/backend/src/config.py (评估配置参数)
+  - day5/backend/src/main.py (Day 5 版本)
+  - day5/backend/pyproject.toml (ragas, datasets, opentelemetry, structlog)
+  - day5/frontend/src/api/client.ts (评估 API 类型)
+  - day5/frontend/src/components/EvaluationPanel.tsx (评估面板)
+  - day5/frontend/src/App.tsx (Day 5 标题 + 评估标签页)
+  - day5/frontend/package.json (版本 5.0.0)
+  - day5/CHANGES.md
+
 ## Daily Progress Plan
 <!--
   每日计划与实际进度对比
@@ -153,7 +183,7 @@
 | Day 2 | 数据预处理增强 | complete | 多格式解析 + 智能分块 |
 | Day 3 | 检索优化 | complete | 混合检索 + 重排序 |
 | Day 4 | 生成增强 | complete | 引用溯源 + 流式输出 |
-| Day 5 | 评估与监控 | pending | RAGAS + 链路追踪 |
+| Day 5 | 评估与监控 | complete | RAGAS + 链路追踪 |
 | Day 6 | 安全与治理 | pending | 认证 + 权限 + 审计 |
 | Day 7 | 生产优化 | pending | Docker + 文档 |
 
@@ -179,23 +209,23 @@
 -->
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 5: Day 4 生成增强完成 |
-| Where am I going? | Phase 6: Day 5 评估与监控 |
+| Where am I? | Phase 6: Day 5 评估与监控完成 |
+| Where am I going? | Phase 7: Day 6 安全与治理 |
 | What's the goal? | 创建分阶段 RAG 教程项目，从核心功能到完整系统 |
 | What have I learned? | 见 findings.md |
-| What have I done? | Day 1-4 完成，实现了最小化 RAG + 多格式解析 + 混合检索 + 引用溯源/流式输出 |
+| What have I done? | Day 1-5 完成，实现了最小化 RAG + 多格式解析 + 混合检索 + 引用溯源/流式输出 + 评估/追踪 |
 
 ## Next Actions
 <!--
   下一步行动项
 -->
-1. 开始 Day 5 实现：
-   - RAGAS 离线评估框架
-   - 检索指标（Recall, Precision, MRR）
-   - 生成指标（Faithfulness, Relevance）
-   - 链路追踪（Request Tracing）
-   - 前端：评估报告展示
-   - 测试：评估流程验证
+1. 开始 Day 6 实现：
+   - JWT 用户认证
+   - 文档级权限控制（ACL）
+   - 审计日志
+   - 输入输出过滤
+   - 前端：登录、权限管理
+   - 测试：安全功能验证
 
 ---
 *Update after completing each phase or encountering errors*

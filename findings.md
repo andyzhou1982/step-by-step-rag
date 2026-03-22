@@ -273,5 +273,81 @@ where:
   lower_confidence = 0.3 if "cannot find" in answer else 0.0
 ```
 
+## Day 5 Research: Evaluation & Observability Implementation
+/*
+  Day 5 研究：评估与可观测性实现
+  Updated: 2026-03-22
+*/
+### Key Components
+
+1. **EvaluationService (RAGAS)**
+   - Integrates ragas library for RAG quality assessment
+   - Metrics: faithfulness, answer_relevancy, context_precision, context_recall
+   - Uses LangChain LLM for evaluation (requires OpenAI-compatible API)
+   - Supports single and batch evaluation
+   - Overall score: weighted average (faithfulness 0.3, relevance 0.3, precision 0.2, recall 0.2)
+
+2. **RetrievalMetricsService**
+   - Retrieval quality metrics without LLM dependency
+   - Recall@K: proportion of relevant items retrieved
+   - Precision@K: proportion of retrieved items that are relevant
+   - MRR (Mean Reciprocal Rank): position of first relevant result
+   - NDCG@K: Normalized Discounted Cumulative Gain for ranking quality
+
+3. **TracingService (OpenTelemetry)**
+   - Request tracing with spans
+   - In-memory trace storage (for development)
+   - Structured logging with structlog
+   - Decorator for automatic function tracing: @traced(operation_name)
+   - Console exporter for development visibility
+
+4. **Evaluation API Endpoints**
+   - POST /evaluation/rag: RAGAS evaluation
+   - POST /evaluation/retrieval: Retrieval metrics
+   - POST /evaluation/batch: Batch evaluation
+   - GET /evaluation/metrics/explanations: Metric documentation
+
+### RAGAS Metrics Explanation
+| Metric | What It Measures | Range |
+|--------|------------------|-------|
+| Faithfulness | How well answer is grounded in context | 0-1 |
+| Answer Relevance | How relevant answer is to question | 0-1 |
+| Context Precision | Precision of retrieved context | 0-1 |
+| Context Recall | Coverage of ground truth (requires ground_truth) | 0-1 |
+
+### Retrieval Metrics Formulas
+```
+Recall@K = |retrieved ∩ relevant| / |relevant|
+Precision@K = |retrieved ∩ relevant| / K
+MRR = 1 / position_of_first_relevant
+NDCG@K = DCG@K / IDCG@K
+  where DCG@K = sum(rel_i / log2(i + 2))
+```
+
+### Configuration
+```python
+# Day 5 evaluation settings
+# Day 5 评估设置
+evaluation_enabled: bool = True
+tracing_enabled: bool = True
+metrics_retention_days: int = 30
+```
+
+### Frontend Integration
+- EvaluationPanel component with metric bars
+- Color-coded scores: green (≥70%), yellow (40-70%), red (<40%)
+- New "Evaluation" tab in navigation
+- API client with evaluation functions
+
+### Dependencies Added
+```toml
+"ragas>=0.2.0"              # RAG evaluation
+"datasets>=3.0.0"           # Ragas dataset handling
+"tqdm>=4.66.0"              # Progress bars
+"opentelemetry-api>=1.20.0" # Tracing API
+"opentelemetry-sdk>=1.20.0" # Tracing SDK
+"structlog>=24.0.0"         # Structured logging
+```
+
 ---
 *Update this file after every 2 view/browser/search operations*

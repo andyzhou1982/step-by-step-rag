@@ -12,7 +12,7 @@
 创建一个分阶段的企业级 RAG 系统教程项目，每个阶段（day）独立可运行，展示从核心功能到完整系统的演进过程。
 
 ## Current Phase
-Phase 4: Day 4 实现完成，准备 Day 5
+Phase 5: Day 5 实现完成，准备 Day 6
 
 ## Technology Stack Decisions
 | Component | Choice | Rationale |
@@ -71,14 +71,14 @@ Phase 4: Day 4 实现完成，准备 Day 5
 - **Status:** complete
 - **Goal:** 增强答案可信度，支持引用溯源
 
-### Day 5: 评估与监控 (Evaluation & Observability)
-- [ ] 离线评估框架（RAGAS 集成）
-- [ ] 检索指标（Recall, Precision, MRR）
-- [ ] 生成指标（Faithfulness, Relevance）
-- [ ] 链路追踪（Request Tracing）
-- [ ] 前端：评估报告展示
-- [ ] 测试：评估流程验证
-- **Status:** pending
+### Day 5: 评估与监控 (Evaluation & Observability) ✅
+- [x] 离线评估框架（RAGAS 集成）
+- [x] 检索指标（Recall, Precision, MRR）
+- [x] 生成指标（Faithfulness, Relevance）
+- [x] 链路追踪（Request Tracing）
+- [x] 前端：评估报告展示
+- [x] 代码编译验证通过
+- **Status:** complete
 - **Goal:** 建立评估体系，实现效果可量化
 
 ### Day 6: 安全与治理 (Security & Governance)
