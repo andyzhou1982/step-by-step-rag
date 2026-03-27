@@ -1,9 +1,10 @@
 """
-Vector store service using LangChain PGVector
-使用 LangChain PGVector 的向量存储服务
+Vector store service using LangChain PGVectorStore
+使用 LangChain PGVectorStore 的向量存储服务
 """
 
-from langchain_postgres import PGVector
+from langchain_postgres import PGVectorStore
+from langchain_postgres.v2.engine import PGEngine
 from langchain_core.documents import Document
 from config import settings
 from services.embedding import embedding_service
@@ -12,8 +13,8 @@ from typing import List, Tuple, Optional
 
 class VectorStoreService:
     """
-    Service for storing and searching vector embeddings using LangChain PGVector
-    使用 LangChain PGVector 存储和搜索向量嵌入的服务
+    Service for storing and searching vector embeddings using LangChain PGVectorStore
+    使用 LangChain PGVectorStore 存储和搜索向量嵌入的服务
     """
 
     def __init__(self):
@@ -21,21 +22,41 @@ class VectorStoreService:
         Initialize the vector store service
         初始化向量存储服务
         """
-        self._vectorstore: Optional[PGVector] = None
-        self._connection_string = settings.database_url
+        self._vectorstore: Optional[PGVectorStore] = None
+        self._engine: Optional[PGEngine] = None
+        # Convert postgresql:// to postgresql+asyncpg:// for async support
+        # 将 postgresql:// 转换为 postgresql+asyncpg:// 以支持异步
+        self._connection_string = settings.database_url.replace(
+            "postgresql://", "postgresql+asyncpg://"
+        )
+        self._table_name = "rag_documents"
 
     async def connect(self):
         """
         Connect to the database and initialize vector store
         连接数据库并初始化向量存储
         """
-        # Create PGVector vectorstore
-        # 创建 PGVector 向量存储
-        self._vectorstore = PGVector(
-            embeddings=embedding_service.embeddings,
-            connection=self._connection_string,
-            collection_name="rag_documents",
-            use_jsonb=True,
+        # Create PGEngine
+        # 创建 PGEngine
+        self._engine = PGEngine.from_connection_string(self._connection_string)
+
+        # Get embedding dimension
+        # 获取嵌入维度
+        vector_size = len(await embedding_service.embeddings.aembed_query("test"))
+
+        # Initialize table if not exists
+        # 如果表不存在则初始化
+        await self._engine.ainit_vectorstore_table(
+            table_name=self._table_name,
+            vector_size=vector_size,
+        )
+
+        # Create PGVectorStore
+        # 创建 PGVectorStore
+        self._vectorstore = await PGVectorStore.create(
+            engine=self._engine,
+            embedding_service=embedding_service.embeddings,
+            table_name=self._table_name,
         )
 
     async def disconnect(self):
@@ -43,12 +64,13 @@ class VectorStoreService:
         Disconnect from the database
         断开数据库连接
         """
-        # PGVector handles connection pooling internally
-        # PGVector 内部处理连接池
+        if self._engine:
+            await self._engine.close()
         self._vectorstore = None
+        self._engine = None
 
     @property
-    def vectorstore(self) -> PGVector:
+    def vectorstore(self) -> PGVectorStore:
         """
         Get the vector store instance
         获取向量存储实例
