@@ -15,7 +15,7 @@ from langchain_core.documents import Document
 from config import settings
 from services.embedding import embedding_service
 from typing import List, Tuple, Optional, Dict
-import asyncpg.exceptions
+from sqlalchemy.exc import ProgrammingError
 
 
 class VectorStoreService:
@@ -58,7 +58,7 @@ class VectorStoreService:
                 table_name=self._table_name,
                 vector_size=vector_size,
             )
-        except asyncpg.exceptions.DuplicateTableError:
+        except ProgrammingError:
             # Table already exists, which is fine
             # 表已存在，无需处理
             pass
