@@ -9,6 +9,7 @@ from langchain_core.documents import Document
 from config import settings
 from services.embedding import embedding_service
 from typing import List, Tuple, Optional
+import asyncpg.exceptions
 
 
 class VectorStoreService:
@@ -46,10 +47,15 @@ class VectorStoreService:
 
         # Initialize table if not exists
         # 如果表不存在则初始化
-        await self._engine.ainit_vectorstore_table(
-            table_name=self._table_name,
-            vector_size=vector_size,
-        )
+        try:
+            await self._engine.ainit_vectorstore_table(
+                table_name=self._table_name,
+                vector_size=vector_size,
+            )
+        except asyncpg.exceptions.DuplicateTableError:
+            # Table already exists, which is fine
+            # 表已存在，无需处理
+            pass
 
         # Create PGVectorStore
         # 创建 PGVectorStore
