@@ -129,7 +129,7 @@ class DocumentParserService:
             文件类型，如果不支持则返回 None
         """
         ext = os.path.splitext(filename)[1].lower()
-        return self.SUPPORTED_EXTENSIONS.get(f'.{ext}')
+        return self.SUPPORTED_EXTENSIONS.get(ext)
 
     def is_supported(self, filename: str) -> bool:
         """
