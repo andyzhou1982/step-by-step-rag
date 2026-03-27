@@ -116,7 +116,7 @@ function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
             type="file"
             ref={fileInputRef}
             onChange={handleFileChange}
-            accept=".txt"
+            accept=".txt,.md,.pdf,.docx,.html"
             className="hidden"
           />
 
@@ -137,7 +137,7 @@ function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
                 点击选择或拖放文件到此处
               </p>
               <p className="text-sm text-gray-400 mt-2">
-                Supported: .txt files (Day 1) / 支持: .txt 文件 (Day 1)
+                Supported: .txt, .md, .pdf, .docx, .html / 支持: .txt, .md, .pdf, .docx, .html
               </p>
             </div>
           )}
@@ -188,8 +188,8 @@ function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
             Instructions / 说明
           </h3>
           <ul className="text-sm text-blue-700 space-y-1">
-            <li>• Upload text files (.txt) containing your documents</li>
-            <li>• 上传包含您文档的文本文件 (.txt)</li>
+            <li>• Upload documents: .txt, .md, .pdf, .docx, .html</li>
+            <li>• 上传文档: .txt, .md, .pdf, .docx, .html</li>
             <li>• The system will automatically split the text into chunks</li>
             <li>• 系统将自动将文本分割为分块</li>
             <li>• After uploading, go to Chat tab to ask questions</li>
