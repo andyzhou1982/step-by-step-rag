@@ -256,7 +256,7 @@ class VectorStoreService:
                 # Query all documents from the table
                 # 从表中查询所有文档
                 result = await conn.execute(
-                    text(f"SELECT id, content, cmetadata FROM {self._table_name}")
+                    text(f"SELECT langchain_id, content, langchain_metadata FROM {self._table_name}")
                 )
                 rows = result.fetchall()
 
@@ -264,7 +264,7 @@ class VectorStoreService:
                 for row in rows:
                     # Parse metadata if it's a string
                     # 如果元数据是字符串则解析
-                    metadata = row.cmetadata if hasattr(row, 'cmetadata') else {}
+                    metadata = row.langchain_metadata if hasattr(row, 'langchain_metadata') else {}
                     if isinstance(metadata, str):
                         try:
                             metadata = json.loads(metadata)
@@ -272,7 +272,7 @@ class VectorStoreService:
                             metadata = {}
 
                     documents.append({
-                        "chunk_id": str(row.id) or "",
+                        "chunk_id": str(row.langchain_id) or "",
                         "document_id": metadata.get("source", ""),
                         "content": row.content or "",
                         "filename": metadata.get("filename", "unknown"),
