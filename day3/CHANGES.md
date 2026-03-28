@@ -5,6 +5,110 @@ This document lists the core changes from Day 2 to Day 3 and the reasons behind 
 
 ---
 
+## 0. Bug 修复 (2026-03-27~28) / Bug Fixes
+
+### BM25 索引构建问题修复
+
+**问题描述 / Issue:**
+- BM25 索引构建使用空查询 `asimilarity_search("", k=1000)` 会卡住
+- 使用 PGEngine 连接池导致 "Task got Future attached to a different loop" 错误
+- PGVector 表列名错误：使用了 `id`, `metadata` 而非实际的 `langchain_id`, `langchain_metadata`
+
+**修复方案 / Solution:**
+
+```python
+# vector_store.py 修复
+
+# 1. 添加独立的异步引擎用于直接 SQL 查询
+from sqlalchemy.ext.asyncio import create_async_engine
+
+class VectorStoreService:
+    def __init__(self):
+        # ...
+        self._async_engine = None  # 用于 BM25 索引构建
+
+    async def connect(self):
+        # ...
+        self._async_engine = create_async_engine(self._connection_string)
+
+    async def get_all_documents_for_bm25(self) -> List[Dict]:
+        if not self._async_engine:
+            return []
+
+        try:
+            async with self._async_engine.connect() as conn:
+                result = await conn.execute(
+                    text(f"SELECT langchain_id, content, langchain_metadata FROM {self._table_name}")
+                )
+                rows = result.fetchall()
+                documents = []
+                for row in rows:
+                    metadata = row.langchain_metadata
+                    if isinstance(metadata, str):
+                        metadata = json.loads(metadata)
+                    documents.append({
+                        "chunk_id": str(row.langchain_id) or "",
+                        "document_id": metadata.get("source", ""),
+                        "content": row.content or "",
+                        "filename": metadata.get("filename", "unknown"),
+                        "file_type": metadata.get("file_type", "text"),
+                    })
+                return documents
+        except Exception as e:
+            print(f"Warning: Failed to get documents for BM25: {e}")
+            return []
+```
+
+---
+
+### 文档列表持久化修复
+
+**问题描述 / Issue:**
+- 文档列表使用内存字典 `document_registry: dict = {}` 存储
+- 重启服务后文档列表丢失
+
+**修复方案 / Solution:**
+
+新增 `services/document_registry.py` 服务：
+
+```python
+class DocumentRegistryService:
+    """文档元数据持久化服务"""
+
+    async def connect(self):
+        # 创建 document_registry 表
+        async with self._async_engine.connect() as conn:
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS document_registry (
+                    id VARCHAR(255) PRIMARY KEY,
+                    filename VARCHAR(500) NOT NULL,
+                    chunk_count INTEGER NOT NULL,
+                    created_at TIMESTAMP NOT NULL,
+                    file_type VARCHAR(100),
+                    file_size BIGINT,
+                    title VARCHAR(500)
+                )
+            """))
+
+    async def add_document(doc_id, filename, chunk_count, ...) -> bool
+    async def list_documents() -> List[Dict]
+    async def delete_document(doc_id) -> bool
+```
+
+修改 `routers/documents.py`：
+```python
+# 旧代码 (内存)
+document_registry: dict = {}
+document_registry[document_id] = {...}
+
+# 新代码 (数据库)
+from services.document_registry import document_registry
+await document_registry.add_document(doc_id=document_id, ...)
+docs = await document_registry.list_documents()
+```
+
+---
+
 ## 1. 新增文件 / New Files
 
 ### `backend/src/services/retrieval_service.py`

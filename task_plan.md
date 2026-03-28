@@ -12,7 +12,15 @@
 创建一个分阶段的企业级 RAG 系统教程项目，每个阶段（day）独立可运行，展示从核心功能到完整系统的演进过程。
 
 ## Current Phase
-Phase 8: Day 7 完成 - 项目完成！🎉
+Phase 8: Day 7 完成 + Bug 修复
+
+### 最近修复 (2026-03-27~28)
+- [x] 修复 BM25 索引构建使用空查询卡住的问题
+- [x] 修复 BM25 索引构建时的事件循环冲突问题
+- [x] 修复 PGVector 表列名错误 (langchain_id, langchain_metadata)
+- [x] 修复文件扩展名解析错误
+- [x] 文档列表持久化到 PostgreSQL（day1-day7 全部修复）
+- [x] 前端支持多种文件格式上传
 
 ## Technology Stack Decisions
 | Component | Choice | Rationale |
@@ -118,7 +126,11 @@ Phase 8: Day 7 完成 - 项目完成！🎉
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |-------|---------|------------|
-| (暂无) | - | - |
+| BM25 索引构建卡住 | 使用空查询 `asimilarity_search("", k=1000)` | 改用直接 SQL 查询获取所有文档 |
+| 事件循环冲突 "Task got Future attached to a different loop" | 使用 PGEngine 的连接池 | 创建独立的 `create_async_engine` 用于直接 SQL 查询 |
+| PGVector 列名错误 "column 'id' does not exist" | 使用 `id`, `metadata` 列名 | 改为 `langchain_id`, `langchain_metadata` |
+| 文档列表重启后丢失 | 使用内存字典 `document_registry` | 持久化到 PostgreSQL `document_registry` 表 |
+| 文件扩展名解析错误 | 使用 `filename.split('.')[-1]` | 改用 `Path(filename).suffix.lower()` |
 
 ## Project Structure
 ```
