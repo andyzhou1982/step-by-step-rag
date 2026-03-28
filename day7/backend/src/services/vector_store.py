@@ -9,12 +9,14 @@ Day 3 Enhancement: Added method to retrieve all documents for BM25 indexing
 Day 3 增强： 添加了检索所有文档以构建 BM25 索引的方法
 """
 
+import json
 from langchain_postgres import PGVectorStore
 from langchain_postgres.v2.engine import PGEngine
 from langchain_core.documents import Document
 from config import settings
 from services.embedding import embedding_service
 from typing import List, Tuple, Optional, Dict
+from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 
 
@@ -231,26 +233,40 @@ class VectorStoreService:
             List of document dicts with content and metadata
             包含内容和元数据的文档字典列表
         """
-        # Use vector store to get all documents
-        # 使用向量存储获取所有文档
+        # Use direct SQL query to get all documents
+        # 使用直接 SQL 查询获取所有文档
         try:
-            # Perform a broad search to get all documents
-            # 执行广泛搜索以获取所有文档
-            results = await self.vectorstore.asimilarity_search(
-                "",  # Empty query to match all
-                k=1000  # Large number to get all
-            )
-            documents = []
-            for doc in results:
-                documents.append({
-                    "chunk_id": doc.id or "",
-                    "document_id": doc.metadata.get("source", ""),
-                    "content": doc.page_content,
-                    "filename": doc.metadata.get("filename", "unknown"),
-                    "file_type": doc.metadata.get("file_type", "text"),
-                })
-            return documents
-        except Exception:
+            # Get raw connection from engine
+            # 从引擎获取原始连接
+            async with self._engine._pool.connect() as conn:
+                # Query all documents from the table
+                # 从表中查询所有文档
+                result = await conn.execute(
+                    text(f"SELECT id, content, metadata FROM {self._table_name}")
+                )
+                rows = result.fetchall()
+
+                documents = []
+                for row in rows:
+                    # Parse metadata if it's a string
+                    # 如果元数据是字符串则解析
+                    metadata = row.metadata
+                    if isinstance(metadata, str):
+                        try:
+                            metadata = json.loads(metadata)
+                        except:
+                            metadata = {}
+
+                    documents.append({
+                        "chunk_id": str(row.id) or "",
+                        "document_id": metadata.get("source", ""),
+                        "content": row.content or "",
+                        "filename": metadata.get("filename", "unknown"),
+                        "file_type": metadata.get("file_type", "text"),
+                    })
+                return documents
+        except Exception as e:
+            print(f"Warning: Failed to get documents for BM25: {e}")
             return []
 
     async def delete_document(self, document_id: str) -> bool:
