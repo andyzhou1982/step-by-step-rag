@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 
 from routers import documents, chat
 from services.vector_store import vector_store
+from services.document_registry import document_registry
 from models.schemas import HealthResponse
 from config import settings
 
@@ -22,22 +23,24 @@ async def lifespan(app: FastAPI):
     Application lifespan manager for startup and shutdown
     应用生命周期管理器，用于启动和关闭
     """
-    # Startup: Connect to database
+    # Startup: Connect to databases
     # 启动: 连接数据库
-    print("Starting up... Connecting to database.")
+    print("Starting up... Connecting to databases.")
     print("正在启动... 连接数据库。")
     await vector_store.connect()
-    print("Database connected.")
+    await document_registry.connect()
+    print("Databases connected.")
     print("数据库已连接。")
 
     yield
 
-    # Shutdown: Disconnect from database
+    # Shutdown: Disconnect from databases
     # 关闭: 断开数据库连接
-    print("Shutting down... Disconnecting from database.")
+    print("Shutting down... Disconnecting from databases.")
     print("正在关闭... 断开数据库连接。")
     await vector_store.disconnect()
-    print("Database disconnected.")
+    await document_registry.disconnect()
+    print("Databases disconnected.")
     print("数据库已断开。")
 
 

@@ -1,6 +1,9 @@
 """
 Document management API routes using LangChain text splitters
 使用 LangChain 文本分割器的文档管理 API 路由
+
+Day 1 Enhancement: Persistent document metadata in PostgreSQL
+Day 1 增强： 将文档元数据持久化到 PostgreSQL
 """
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
@@ -15,15 +18,12 @@ from models.schemas import (
     ApiResponse
 )
 from services.vector_store import vector_store
+from services.document_registry import document_registry
 from config import settings
 
 # Create router
 # 创建路由器
 router = APIRouter(prefix="/documents", tags=["Documents"])
-
-# In-memory document tracking (Day 1 only)
-# 内存文档跟踪（仅 Day 1）
-document_registry: dict = {}
 
 
 def get_text_splitter() -> RecursiveCharacterTextSplitter:
@@ -54,7 +54,13 @@ async def upload_document(file: UploadFile = File(...)):
     """
     # Check file type
     # 检查文件类型
-    if not file.filename or not file.filename.endswith('.txt'):
+    if not file.filename:
+        raise HTTPException(
+            status_code=400,
+            detail="Filename is required / 文件名是必需的"
+        )
+
+    if not file.filename.endswith('.txt'):
         raise HTTPException(
             status_code=400,
             detail="Only .txt files are supported in Day 1. "
@@ -86,14 +92,13 @@ async def upload_document(file: UploadFile = File(...)):
             chunks=chunks
         )
 
-        # Track document in registry
-        # 在注册表中跟踪文档
-        document_registry[document_id] = {
-            "id": document_id,
-            "filename": file.filename,
-            "chunk_count": len(chunks),
-            "created_at": datetime.now(),
-        }
+        # Track document in database registry
+        # 在数据库注册表中跟踪文档
+        await document_registry.add_document(
+            doc_id=document_id,
+            filename=file.filename,
+            chunk_count=len(chunks)
+        )
 
         return DocumentUploadResponse(
             document_id=document_id,
@@ -127,9 +132,9 @@ async def list_documents():
         带有元数据的文档列表
     """
     try:
-        # Return from registry (Day 1 uses in-memory storage)
-        # 从注册表返回（Day 1 使用内存存储）
-        docs = list(document_registry.values())
+        # Get documents from database registry
+        # 从数据库注册表获取文档
+        docs = await document_registry.list_documents()
         return DocumentListResponse(
             documents=[
                 DocumentInfo(
@@ -165,8 +170,10 @@ async def delete_document(document_id: str):
     """
     try:
         success = await vector_store.delete_document(document_id)
-        if success and document_id in document_registry:
-            del document_registry[document_id]
+        if success:
+            # Delete from database registry
+            # 从数据库注册表中删除
+            await document_registry.delete_document(document_id)
             return ApiResponse(
                 success=True,
                 data={"document_id": document_id},

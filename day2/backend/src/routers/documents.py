@@ -4,6 +4,9 @@ Document management API routes using LangChain text splitters
 
 Day 2 Enhancement: Multi-format document parsing and metadata extraction
 Day 2 增强： 多格式文档解析和元数据提取
+
+Day 2 Enhancement: Persistent document metadata in PostgreSQL
+Day 2 增强： 将文档元数据持久化到 PostgreSQL
 """
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
@@ -20,15 +23,12 @@ from models.schemas import (
 )
 from services.vector_store import vector_store
 from services.document_parser import document_parser
+from services.document_registry import document_registry
 from config import settings
 
 # Create router
 # 创建路由器
 router = APIRouter(prefix="/documents", tags=["Documents"])
-
-# In-memory document tracking (Day 2 still uses memory, Day 6 will add database)
-# 内存文档跟踪（Day 2 仍使用内存，Day 6 将添加数据库）
-document_registry: dict = {}
 
 
 @router.get("/formats", response_model=SupportedFormatsResponse)
@@ -110,17 +110,16 @@ async def upload_document(file: UploadFile = File(...)):
             metadata=parsed_doc.metadata
         )
 
-        # Track document in registry
-        # 在注册表中跟踪文档
-        document_registry[document_id] = {
-            "id": document_id,
-            "filename": file.filename,
-            "chunk_count": len(parsed_doc.chunks),
-            "created_at": datetime.now(),
-            "file_type": parsed_doc.document_info.file_type,
-            "file_size": parsed_doc.document_info.file_size,
-            "title": parsed_doc.metadata.get("title"),
-        }
+        # Track document in database registry
+        # 在数据库注册表中跟踪文档
+        await document_registry.add_document(
+            doc_id=document_id,
+            filename=file.filename,
+            chunk_count=len(parsed_doc.chunks),
+            file_type=parsed_doc.document_info.file_type,
+            file_size=parsed_doc.document_info.file_size,
+            title=parsed_doc.metadata.get("title")
+        )
 
         # Create metadata response
         # 创建元数据响应
@@ -166,9 +165,9 @@ async def list_documents():
     Day 2 增强: 包含文件类型和大小信息
     """
     try:
-        # Return from registry (Day 2 still uses in-memory storage)
-        # 从注册表返回（Day 2 仍使用内存存储）
-        docs = list(document_registry.values())
+        # Get documents from database registry
+        # 从数据库注册表获取文档
+        docs = await document_registry.list_documents()
         return DocumentListResponse(
             documents=[
                 DocumentInfo(
@@ -207,8 +206,10 @@ async def delete_document(document_id: str):
     """
     try:
         success = await vector_store.delete_document(document_id)
-        if success and document_id in document_registry:
-            del document_registry[document_id]
+        if success:
+            # Delete from database registry
+            # 从数据库注册表中删除
+            await document_registry.delete_document(document_id)
             return ApiResponse(
                 success=True,
                 data={"document_id": document_id},

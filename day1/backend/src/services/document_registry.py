@@ -1,0 +1,194 @@
+"""
+Document registry service for persistent document metadata storage
+文档注册表服务，用于持久化文档元数据存储
+
+Day 1 Enhancement: Store document metadata in PostgreSQL instead of memory
+Day 1 增强： 将文档元数据存储在 PostgreSQL 中而不是内存中
+"""
+
+from datetime import datetime
+from typing import List, Dict, Optional
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
+from config import settings
+
+
+class DocumentRegistryService:
+    """
+    Service for managing document metadata in PostgreSQL
+    在 PostgreSQL 中管理文档元数据的服务
+    """
+
+    def __init__(self):
+        """
+        Initialize the document registry service
+        初始化文档注册表服务
+        """
+        self._connection_string = settings.database_url.replace(
+            "postgresql://", "postgresql+asyncpg://"
+        )
+        self._async_engine = None
+        self._table_name = "document_registry"
+
+    async def connect(self):
+        """
+        Connect to the database and initialize the registry table
+        连接数据库并初始化注册表
+        """
+        self._async_engine = create_async_engine(self._connection_string)
+
+        # Create table if not exists
+        # 如果表不存在则创建
+        async with self._async_engine.connect() as conn:
+            await conn.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS {self._table_name} (
+                    id VARCHAR(255) PRIMARY KEY,
+                    filename VARCHAR(500) NOT NULL,
+                    chunk_count INTEGER NOT NULL,
+                    created_at TIMESTAMP NOT NULL
+                )
+            """))
+            await conn.commit()
+
+    async def disconnect(self):
+        """
+        Disconnect from the database
+        断开数据库连接
+        """
+        if self._async_engine:
+            await self._async_engine.dispose()
+        self._async_engine = None
+
+    async def add_document(
+        self,
+        doc_id: str,
+        filename: str,
+        chunk_count: int
+    ) -> bool:
+        """
+        Add a document to the registry
+        将文档添加到注册表
+
+        Args:
+            doc_id: Document ID
+                    文档 ID
+            filename: Original filename
+                      原始文件名
+            chunk_count: Number of chunks
+                         分块数量
+        Returns:
+            Whether the operation was successful
+            操作是否成功
+        """
+        try:
+            async with self._async_engine.connect() as conn:
+                await conn.execute(text(f"""
+                    INSERT INTO {self._table_name}
+                    (id, filename, chunk_count, created_at)
+                    VALUES (:id, :filename, :chunk_count, :created_at)
+                    ON CONFLICT (id) DO UPDATE SET
+                        filename = EXCLUDED.filename,
+                        chunk_count = EXCLUDED.chunk_count
+                """), {
+                    "id": doc_id,
+                    "filename": filename,
+                    "chunk_count": chunk_count,
+                    "created_at": datetime.now()
+                })
+                await conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error adding document to registry: {e}")
+            return False
+
+    async def get_document(self, doc_id: str) -> Optional[Dict]:
+        """
+        Get a document by ID
+        根据 ID 获取文档
+
+        Args:
+            doc_id: Document ID
+                    文档 ID
+        Returns:
+            Document dict or None
+            文档字典或 None
+        """
+        try:
+            async with self._async_engine.connect() as conn:
+                result = await conn.execute(text(f"""
+                    SELECT id, filename, chunk_count, created_at
+                    FROM {self._table_name}
+                    WHERE id = :id
+                """), {"id": doc_id})
+                row = result.fetchone()
+                if row:
+                    return {
+                        "id": row.id,
+                        "filename": row.filename,
+                        "chunk_count": row.chunk_count,
+                        "created_at": row.created_at
+                    }
+                return None
+        except Exception as e:
+            print(f"Error getting document from registry: {e}")
+            return None
+
+    async def list_documents(self) -> List[Dict]:
+        """
+        List all documents
+        列出所有文档
+
+        Returns:
+            List of document dicts
+            文档字典列表
+        """
+        try:
+            async with self._async_engine.connect() as conn:
+                result = await conn.execute(text(f"""
+                    SELECT id, filename, chunk_count, created_at
+                    FROM {self._table_name}
+                    ORDER BY created_at DESC
+                """))
+                rows = result.fetchall()
+                return [
+                    {
+                        "id": row.id,
+                        "filename": row.filename,
+                        "chunk_count": row.chunk_count,
+                        "created_at": row.created_at
+                    }
+                    for row in rows
+                ]
+        except Exception as e:
+            print(f"Error listing documents from registry: {e}")
+            return []
+
+    async def delete_document(self, doc_id: str) -> bool:
+        """
+        Delete a document from the registry
+        从注册表中删除文档
+
+        Args:
+            doc_id: Document ID to delete
+                    要删除的文档 ID
+        Returns:
+            Whether deletion was successful
+            删除是否成功
+        """
+        try:
+            async with self._async_engine.connect() as conn:
+                result = await conn.execute(text(f"""
+                    DELETE FROM {self._table_name}
+                    WHERE id = :id
+                    RETURNING id
+                """), {"id": doc_id})
+                await conn.commit()
+                return result.fetchone() is not None
+        except Exception as e:
+            print(f"Error deleting document from registry: {e}")
+            return False
+
+
+# Global document registry service instance
+# 全局文档注册表服务实例
+document_registry = DocumentRegistryService()
