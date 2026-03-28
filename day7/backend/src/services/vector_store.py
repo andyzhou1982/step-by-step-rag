@@ -17,6 +17,7 @@ from config import settings
 from services.embedding import embedding_service
 from typing import List, Tuple, Optional, Dict
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.exc import ProgrammingError
 
 
@@ -39,6 +40,9 @@ class VectorStoreService:
             "postgresql://", "postgresql+asyncpg://"
         )
         self._table_name = "rag_documents"
+        # Separate async engine for direct SQL queries (BM25 index building)
+        # 用于直接 SQL 查询的独立异步引擎（BM25 索引构建）
+        self._async_engine = None
 
     async def connect(self):
         """
@@ -48,6 +52,10 @@ class VectorStoreService:
         # Create PGEngine
         # 创建 PGEngine
         self._engine = PGEngine.from_connection_string(self._connection_string)
+
+        # Create separate async engine for direct SQL queries
+        # 创建独立的异步引擎用于直接 SQL 查询
+        self._async_engine = create_async_engine(self._connection_string)
 
         # Get embedding dimension
         # 获取嵌入维度
@@ -80,8 +88,11 @@ class VectorStoreService:
         """
         if self._engine:
             await self._engine.close()
+        if self._async_engine:
+            await self._async_engine.dispose()
         self._vectorstore = None
         self._engine = None
+        self._async_engine = None
 
     @property
     def vectorstore(self) -> PGVectorStore:
@@ -235,14 +246,17 @@ class VectorStoreService:
         """
         # Use direct SQL query to get all documents
         # 使用直接 SQL 查询获取所有文档
+        if not self._async_engine:
+            return []
+
         try:
-            # Get raw connection from engine
-            # 从引擎获取原始连接
-            async with self._engine._pool.connect() as conn:
+            # Use separate async engine to avoid event loop conflicts
+            # 使用独立的异步引擎以避免事件循环冲突
+            async with self._async_engine.connect() as conn:
                 # Query all documents from the table
                 # 从表中查询所有文档
                 result = await conn.execute(
-                    text(f"SELECT id, content, metadata FROM {self._table_name}")
+                    text(f"SELECT id, content, cmetadata FROM {self._table_name}")
                 )
                 rows = result.fetchall()
 
@@ -250,7 +264,7 @@ class VectorStoreService:
                 for row in rows:
                     # Parse metadata if it's a string
                     # 如果元数据是字符串则解析
-                    metadata = row.metadata
+                    metadata = row.cmetadata if hasattr(row, 'cmetadata') else {}
                     if isinstance(metadata, str):
                         try:
                             metadata = json.loads(metadata)
