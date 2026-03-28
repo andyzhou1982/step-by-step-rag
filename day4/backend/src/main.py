@@ -7,9 +7,6 @@ Day 2： 增强了多格式文档支持
 
 Day 3: Added hybrid retrieval with BM25 indexing
 Day 3： 添加了带 BM25 索引的混合检索
-
-Day 4: Added streaming, citations, and confidence scoring
-Day 4： 添加了流式输出、引用溯源和置信度评分
 """
 
 from fastapi import FastAPI
@@ -19,6 +16,7 @@ from contextlib import asynccontextmanager
 from routers import documents, chat
 from services.vector_store import vector_store
 from services.retrieval_service import retrieval_service
+from services.document_registry import document_registry
 from models.schemas import HealthResponse
 from config import settings
 
@@ -29,12 +27,13 @@ async def lifespan(app: FastAPI):
     Application lifespan manager for startup and shutdown
     应用生命周期管理器，用于启动和关闭
     """
-    # Startup: Connect to database
+    # Startup: Connect to databases
     # 启动: 连接数据库
-    print("Starting up... Connecting to database.")
+    print("Starting up... Connecting to databases.")
     print("正在启动... 连接数据库。")
     await vector_store.connect()
-    print("Database connected.")
+    await document_registry.connect()
+    print("Databases connected.")
     print("数据库已连接。")
 
     # Day 3: Build BM25 index from existing documents
@@ -56,12 +55,13 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Shutdown: Disconnect from database
+    # Shutdown: Disconnect from databases
     # 关闭: 断开数据库连接
-    print("Shutting down... Disconnecting from database.")
+    print("Shutting down... Disconnecting from databases.")
     print("正在关闭... 断开数据库连接。")
     await vector_store.disconnect()
-    print("Database disconnected.")
+    await document_registry.disconnect()
+    print("Databases disconnected.")
     print("数据库已断开。")
 
 
@@ -70,25 +70,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Step-by-Step RAG API",
     description="""
-## Day 4: Generation Enhancement with Citations & Streaming
-## Day 4: 引用溯源与流式输出的生成增强
+## Day 3: Hybrid Retrieval & Re-ranking
+## Day 3: 混合检索与重排序
 
-A RAG (Retrieval-Augmented Generation) system with advanced generation features.
-一个具有高级生成功能的 RAG（检索增强生成）系统。
+A RAG (Retrieval-Augmented Generation) system with advanced retrieval strategies.
+一个具有高级检索策略的 RAG（检索增强生成）系统。
 
-### Day 4 Features / Day 4 功能:
-- **Streaming responses**: Real-time answer generation via SSE
-- **流式响应**: 通过 SSE 实时生成答案
-- **Citation tracking**: Track which sources contribute to the answer
-- **引用追踪**: 追踪哪些来源贡献了答案
-- **Confidence scoring**: Evaluate answer reliability
-- **置信度评分**: 评估答案可靠性
-- **Anti-hallucination**: Strict context-based response generation
-- **防幻觉**: 严格基于上下文的响应生成
-- **Conversation management**: Enhanced history with metadata
-- **对话管理**: 带元数据的增强历史
-
-### Day 3 Features (Inherited) / Day 3 功能（继承）:
+### Day 3 Features / Day 3 功能:
 - **Hybrid search**: Vector + BM25 keyword search
 - **混合检索**: 向量 + BM25 关键词搜索
 - **Query rewriting**: Optional LLM-based query optimization
@@ -116,13 +104,10 @@ A RAG (Retrieval-Augmented Generation) system with advanced generation features.
 - `GET /documents/list` - List documents / 列出文档
 - `GET /documents/formats` - Supported formats / 支持的格式
 - `DELETE /documents/{id}` - Delete document / 删除文档
-- `POST /chat/ask` - Ask question (non-streaming) / 提问（非流式）
-- `POST /chat/stream` - Ask question (streaming SSE) / 提问（流式 SSE）
-- `GET /chat/conversations` - List conversations / 列出对话
-- `GET /chat/conversations/{id}` - Get conversation history / 获取对话历史
+- `POST /chat/ask` - Ask question / 提问
 - `GET /chat/retrieval-config` - Get retrieval config / 获取检索配置
 """,
-    version="4.0.0",
+    version="3.0.0",
     lifespan=lifespan
 )
 
@@ -150,16 +135,11 @@ async def root():
     返回 API 信息的根端点
     """
     return {
-        "message": "Welcome to Step-by-Step RAG API - Day 4",
-        "欢迎": "欢迎使用 Step-by-Step RAG API - Day 4",
-        "version": "4.0.0",
-        "day": 4,
+        "message": "Welcome to Step-by-Step RAG API - Day 3",
+        "欢迎": "欢迎使用 Step-by-Step RAG API - Day 3",
+        "version": "3.0.0",
+        "day": 3,
         "features": [
-            "streaming",
-            "citations",
-            "confidence-scoring",
-            "anti-hallucination",
-            "conversation-management",
             "hybrid-search",
             "bm25",
             "query-rewrite",
@@ -189,10 +169,9 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         database=db_status,
-        version="4.0.0",
-        day=4,
-        bm25_indexed=bm25_indexed,
-        streaming_enabled=settings.streaming_enabled,
+        version="3.0.0",
+        day=3,
+        bm25_indexed=bm25_indexed
     )
 
 

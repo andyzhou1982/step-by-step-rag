@@ -7,23 +7,16 @@ Day 2： 增强了多格式文档支持
 
 Day 3: Added hybrid retrieval with BM25 indexing
 Day 3： 添加了带 BM25 索引的混合检索
-
-Day 4: Added streaming, citations, and confidence scoring
-Day 4： 添加了流式输出、引用溯源和置信度评分
-
-Day 5: Added evaluation and tracing
-Day 5： 添加了评估和追踪
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from routers import documents, chat, evaluation
+from routers import documents, chat
 from services.vector_store import vector_store
 from services.retrieval_service import retrieval_service
-from services.evaluation_service import evaluation_service
-from services.tracing_service import tracing_service
+from services.document_registry import document_registry
 from models.schemas import HealthResponse
 from config import settings
 
@@ -34,12 +27,13 @@ async def lifespan(app: FastAPI):
     Application lifespan manager for startup and shutdown
     应用生命周期管理器，用于启动和关闭
     """
-    # Startup: Connect to database
+    # Startup: Connect to databases
     # 启动: 连接数据库
-    print("Starting up... Connecting to database.")
+    print("Starting up... Connecting to databases.")
     print("正在启动... 连接数据库。")
     await vector_store.connect()
-    print("Database connected.")
+    await document_registry.connect()
+    print("Databases connected.")
     print("数据库已连接。")
 
     # Day 3: Build BM25 index from existing documents
@@ -61,12 +55,13 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Shutdown: Disconnect from database
+    # Shutdown: Disconnect from databases
     # 关闭: 断开数据库连接
-    print("Shutting down... Disconnecting from database.")
+    print("Shutting down... Disconnecting from databases.")
     print("正在关闭... 断开数据库连接。")
     await vector_store.disconnect()
-    print("Database disconnected.")
+    await document_registry.disconnect()
+    print("Databases disconnected.")
     print("数据库已断开。")
 
 
@@ -75,37 +70,27 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Step-by-Step RAG API",
     description="""
-## Day 5: Evaluation & Observability
-## Day 5: 评估与可观测性
+## Day 3: Hybrid Retrieval & Re-ranking
+## Day 3: 混合检索与重排序
 
-A RAG (Retrieval-Augmented Generation) system with comprehensive evaluation.
-一个具有全面评估功能的 RAG（检索增强生成）系统。
+A RAG (Retrieval-Augmented Generation) system with advanced retrieval strategies.
+一个具有高级检索策略的 RAG（检索增强生成）系统。
 
-### Day 5 Features / Day 5 功能:
-- **RAGAS evaluation**: Faithfulness, Answer Relevance, Context Precision/Recall
-- **RAGAS 评估**: 忠实度、答案相关性、上下文精确度/召回率
-- **Retrieval metrics**: Recall@K, Precision@K, MRR, NDCG
-- **检索指标**: Recall@K, Precision@K, MRR, NDCG
-- **Request tracing**: OpenTelemetry-based distributed tracing
-- **请求追踪**: 基于 OpenTelemetry 的分布式追踪
-- **Structured logging**: JSON-formatted logs with structlog
-- **结构化日志**: 使用 structlog 的 JSON 格式日志
-
-### Day 4 Features (Inherited) / Day 4 功能（继承）:
-- **Streaming responses**: Real-time answer generation via SSE
-- **流式响应**: 通过 SSE 实时生成答案
-- **Citation tracking**: Track which sources contribute to the answer
-- **引用追踪**: 追踪哪些来源贡献了答案
-- **Confidence scoring**: Evaluate answer reliability
-- **置信度评分**: 评估答案可靠性
-
-### Day 3 Features (Inherited) / Day 3 功能（继承）:
+### Day 3 Features / Day 3 功能:
 - **Hybrid search**: Vector + BM25 keyword search
 - **混合检索**: 向量 + BM25 关键词搜索
 - **Query rewriting**: Optional LLM-based query optimization
 - **查询重写**: 可选的基于 LLM 的查询优化
 - **Re-ranking**: Cross-encoder result re-ranking
 - **重排序**: 交叉编码器结果重排序
+
+### Day 2 Features (Inherited) / Day 2 功能（继承）:
+- **Multi-format support**: PDF, Word, HTML, Markdown, TXT
+- **多格式支持**: PDF, Word, HTML, Markdown, TXT
+- **Metadata extraction**: Title, file type, size
+- **元数据提取**: 标题、文件类型、大小
+- **Smart chunking**: Format-aware text splitting
+- **智能分块**: 格式感知的文本分割
 
 ### Supported Formats / 支持的格式:
 - `.txt` - Plain text / 纯文本
@@ -119,16 +104,10 @@ A RAG (Retrieval-Augmented Generation) system with comprehensive evaluation.
 - `GET /documents/list` - List documents / 列出文档
 - `GET /documents/formats` - Supported formats / 支持的格式
 - `DELETE /documents/{id}` - Delete document / 删除文档
-- `POST /chat/ask` - Ask question (non-streaming) / 提问（非流式）
-- `POST /chat/stream` - Ask question (streaming SSE) / 提问（流式 SSE）
-- `GET /chat/conversations` - List conversations / 列出对话
-- `GET /chat/conversations/{id}` - Get conversation history / 获取对话历史
-- `POST /evaluation/rag` - Evaluate RAG quality / 评估 RAG 质量
-- `POST /evaluation/retrieval` - Evaluate retrieval / 评估检索
-- `POST /evaluation/batch` - Batch evaluation / 批量评估
-- `GET /evaluation/metrics/explanations` - Metric docs / 指标文档
+- `POST /chat/ask` - Ask question / 提问
+- `GET /chat/retrieval-config` - Get retrieval config / 获取检索配置
 """,
-    version="5.0.0",
+    version="3.0.0",
     lifespan=lifespan
 )
 
@@ -147,7 +126,6 @@ app.add_middleware(
 # 包含路由器
 app.include_router(documents.router)
 app.include_router(chat.router)
-app.include_router(evaluation.router)
 
 
 @app.get("/", response_model=dict)
@@ -157,20 +135,11 @@ async def root():
     返回 API 信息的根端点
     """
     return {
-        "message": "Welcome to Step-by-Step RAG API - Day 5",
-        "欢迎": "欢迎使用 Step-by-Step RAG API - Day 5",
-        "version": "5.0.0",
-        "day": 5,
+        "message": "Welcome to Step-by-Step RAG API - Day 3",
+        "欢迎": "欢迎使用 Step-by-Step RAG API - Day 3",
+        "version": "3.0.0",
+        "day": 3,
         "features": [
-            "ragas-evaluation",
-            "retrieval-metrics",
-            "request-tracing",
-            "structured-logging",
-            "streaming",
-            "citations",
-            "confidence-scoring",
-            "anti-hallucination",
-            "conversation-management",
             "hybrid-search",
             "bm25",
             "query-rewrite",
@@ -200,12 +169,9 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         database=db_status,
-        version="5.0.0",
-        day=5,
-        bm25_indexed=bm25_indexed,
-        streaming_enabled=settings.streaming_enabled,
-        evaluation_enabled=settings.evaluation_enabled,
-        tracing_enabled=settings.tracing_enabled,
+        version="3.0.0",
+        day=3,
+        bm25_indexed=bm25_indexed
     )
 
 

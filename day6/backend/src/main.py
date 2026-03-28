@@ -7,31 +7,16 @@ Day 2： 增强了多格式文档支持
 
 Day 3: Added hybrid retrieval with BM25 indexing
 Day 3： 添加了带 BM25 索引的混合检索
-
-Day 4: Added streaming, citations, and confidence scoring
-Day 4： 添加了流式输出、引用溯源和置信度评分
-
-Day 5: Added evaluation and tracing
-Day 5： 添加了评估和追踪
-
-Day 6: Added authentication, permissions, audit, and content filtering
-Day 6： 添加了认证、权限、审计和内容过滤
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from routers import documents, chat, evaluation
-from routers import auth, permissions, audit
+from routers import documents, chat
 from services.vector_store import vector_store
 from services.retrieval_service import retrieval_service
-from services.evaluation_service import evaluation_service
-from services.tracing_service import tracing_service
-from services.auth_service import auth_service
-from services.permission_service import permission_service
-from services.audit_service import audit_service
-from services.content_filter_service import content_filter_service
+from services.document_registry import document_registry
 from models.schemas import HealthResponse
 from config import settings
 
@@ -42,12 +27,13 @@ async def lifespan(app: FastAPI):
     Application lifespan manager for startup and shutdown
     应用生命周期管理器，用于启动和关闭
     """
-    # Startup: Connect to database
+    # Startup: Connect to databases
     # 启动: 连接数据库
-    print("Starting up... Connecting to database.")
+    print("Starting up... Connecting to databases.")
     print("正在启动... 连接数据库。")
     await vector_store.connect()
-    print("Database connected.")
+    await document_registry.connect()
+    print("Databases connected.")
     print("数据库已连接。")
 
     # Day 3: Build BM25 index from existing documents
@@ -67,27 +53,15 @@ async def lifespan(app: FastAPI):
         print(f"Warning: Failed to build BM25 index: {e}")
         print(f"警告：构建 BM25 索引失败：{e}")
 
-    # Day 6: Print security status
-    # Day 6： 打印安全状态
-    print("\n=== Security Status / 安全状态 ===")
-    print(f"Authentication: {'Enabled' if settings.auth_enabled else 'Disabled'}")
-    print(f"认证: {'已启用' if settings.auth_enabled else '已禁用'}")
-    print(f"Audit logging: {'Enabled' if settings.audit_enabled else 'Disabled'}")
-    print(f"审计日志: {'已启用' if settings.audit_enabled else '已禁用'}")
-    print(f"Content filtering: {'Enabled' if settings.content_filter_enabled else 'Disabled'}")
-    print(f"内容过滤: {'已启用' if settings.content_filter_enabled else '已禁用'}")
-    print(f"Default admin user: admin / admin123")
-    print(f"默认管理员用户: admin / admin123")
-    print("================================\n")
-
     yield
 
-    # Shutdown: Disconnect from database
+    # Shutdown: Disconnect from databases
     # 关闭: 断开数据库连接
-    print("Shutting down... Disconnecting from database.")
+    print("Shutting down... Disconnecting from databases.")
     print("正在关闭... 断开数据库连接。")
     await vector_store.disconnect()
-    print("Database disconnected.")
+    await document_registry.disconnect()
+    print("Databases disconnected.")
     print("数据库已断开。")
 
 
@@ -96,49 +70,27 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Step-by-Step RAG API",
     description="""
-## Day 6: Security & Governance
-## Day 6: 安全与治理
+## Day 3: Hybrid Retrieval & Re-ranking
+## Day 3: 混合检索与重排序
 
-A RAG (Retrieval-Augmented Generation) system with enterprise-grade security.
-一个具有企业级安全功能的 RAG（检索增强生成）系统。
+A RAG (Retrieval-Augmented Generation) system with advanced retrieval strategies.
+一个具有高级检索策略的 RAG（检索增强生成）系统。
 
-### Day 6 Features / Day 6 功能:
-- **JWT Authentication**: Secure user authentication with JWT tokens
-- **JWT 认证**: 使用 JWT token 的安全用户认证
-- **Role-based Access Control**: Admin, User, Viewer roles
-- **基于角色的访问控制**: 管理员、用户、查看者角色
-- **Document-level Permissions**: Fine-grained ACL control
-- **文档级权限**: 细粒度的 ACL 控制
-- **Audit Logging**: Comprehensive action tracking
-- **审计日志**: 全面的操作追踪
-- **Content Filtering**: SQL injection, XSS, prompt injection detection
-- **内容过滤**: SQL 注入、XSS、提示注入检测
-- **PII Detection**: Automatic detection and masking of sensitive data
-- **PII 检测**: 自动检测和遮罩敏感数据
-
-### Day 5 Features (Inherited) / Day 5 功能（继承）:
-- **RAGAS evaluation**: Faithfulness, Answer Relevance, Context Precision/Recall
-- **RAGAS 评估**: 忠实度、答案相关性、上下文精确度/召回率
-- **Retrieval metrics**: Recall@K, Precision@K, MRR, NDCG
-- **检索指标**: Recall@K, Precision@K, MRR, NDCG
-- **Request tracing**: OpenTelemetry-based distributed tracing
-- **请求追踪**: 基于 OpenTelemetry 的分布式追踪
-
-### Day 4 Features (Inherited) / Day 4 功能（继承）:
-- **Streaming responses**: Real-time answer generation via SSE
-- **流式响应**: 通过 SSE 实时生成答案
-- **Citation tracking**: Track which sources contribute to the answer
-- **引用追踪**: 追踪哪些来源贡献了答案
-- **Confidence scoring**: Evaluate answer reliability
-- **置信度评分**: 评估答案可靠性
-
-### Day 3 Features (Inherited) / Day 3 功能（继承）:
+### Day 3 Features / Day 3 功能:
 - **Hybrid search**: Vector + BM25 keyword search
 - **混合检索**: 向量 + BM25 关键词搜索
 - **Query rewriting**: Optional LLM-based query optimization
 - **查询重写**: 可选的基于 LLM 的查询优化
 - **Re-ranking**: Cross-encoder result re-ranking
 - **重排序**: 交叉编码器结果重排序
+
+### Day 2 Features (Inherited) / Day 2 功能（继承）:
+- **Multi-format support**: PDF, Word, HTML, Markdown, TXT
+- **多格式支持**: PDF, Word, HTML, Markdown, TXT
+- **Metadata extraction**: Title, file type, size
+- **元数据提取**: 标题、文件类型、大小
+- **Smart chunking**: Format-aware text splitting
+- **智能分块**: 格式感知的文本分割
 
 ### Supported Formats / 支持的格式:
 - `.txt` - Plain text / 纯文本
@@ -147,26 +99,15 @@ A RAG (Retrieval-Augmented Generation) system with enterprise-grade security.
 - `.docx` - Microsoft Word / Microsoft Word 文档
 - `.html` - HTML web pages / HTML 网页
 
-### Authentication Endpoints / 认证端点:
-- `POST /auth/register` - Register new user / 注册新用户
-- `POST /auth/login` - Login and get JWT token / 登录并获取 JWT token
-- `POST /auth/logout` - Logout / 登出
-- `GET /auth/me` - Get current user info / 获取当前用户信息
-- `GET /auth/users` - List users (admin) / 列出用户（管理员）
-
-### Permission Endpoints / 权限端点:
-- `POST /permissions/grant` - Grant permission / 授予权限
-- `DELETE /permissions/revoke/{doc}/{user}` - Revoke permission / 撤销权限
-- `GET /permissions/document/{id}` - Get document permissions / 获取文档权限
-- `GET /permissions/check/{doc}` - Check user permission / 检查用户权限
-
-### Audit Endpoints / 审计端点:
-- `GET /audit/logs` - Get audit logs (admin) / 获取审计日志（管理员）
-- `GET /audit/summary` - System activity summary / 系统活动摘要
-- `GET /audit/my-activity` - User's own activity / 用户自身活动
-- `GET /audit/export` - Export audit logs / 导出审计日志
+### API Endpoints / API 端点:
+- `POST /documents/upload` - Upload document / 上传文档
+- `GET /documents/list` - List documents / 列出文档
+- `GET /documents/formats` - Supported formats / 支持的格式
+- `DELETE /documents/{id}` - Delete document / 删除文档
+- `POST /chat/ask` - Ask question / 提问
+- `GET /chat/retrieval-config` - Get retrieval config / 获取检索配置
 """,
-    version="6.0.0",
+    version="3.0.0",
     lifespan=lifespan
 )
 
@@ -185,10 +126,6 @@ app.add_middleware(
 # 包含路由器
 app.include_router(documents.router)
 app.include_router(chat.router)
-app.include_router(evaluation.router)
-app.include_router(auth.router)
-app.include_router(permissions.router)
-app.include_router(audit.router)
 
 
 @app.get("/", response_model=dict)
@@ -198,33 +135,20 @@ async def root():
     返回 API 信息的根端点
     """
     return {
-        "message": "Welcome to Step-by-Step RAG API - Day 6",
-        "欢迎": "欢迎使用 Step-by-Step RAG API - Day 6",
-        "version": "6.0.0",
-        "day": 6,
+        "message": "Welcome to Step-by-Step RAG API - Day 3",
+        "欢迎": "欢迎使用 Step-by-Step RAG API - Day 3",
+        "version": "3.0.0",
+        "day": 3,
         "features": [
-            "jwt-authentication",
-            "role-based-access",
-            "document-permissions",
-            "audit-logging",
-            "content-filtering",
-            "pii-detection",
-            "ragas-evaluation",
-            "retrieval-metrics",
-            "request-tracing",
-            "streaming",
-            "citations",
-            "confidence-scoring",
             "hybrid-search",
             "bm25",
+            "query-rewrite",
+            "rerank",
             "multi-format",
+            "metadata",
+            "smart-chunking"
         ],
-        "docs": "/docs",
-        "default_credentials": {
-            "username": "admin",
-            "password": "admin123",
-            "note": "Change in production!"
-        }
+        "docs": "/docs"
     }
 
 
@@ -245,15 +169,9 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         database=db_status,
-        version="6.0.0",
-        day=6,
-        bm25_indexed=bm25_indexed,
-        streaming_enabled=settings.streaming_enabled,
-        evaluation_enabled=settings.evaluation_enabled,
-        tracing_enabled=settings.tracing_enabled,
-        auth_enabled=settings.auth_enabled,
-        audit_enabled=settings.audit_enabled,
-        content_filter_enabled=settings.content_filter_enabled,
+        version="3.0.0",
+        day=3,
+        bm25_indexed=bm25_indexed
     )
 
 
