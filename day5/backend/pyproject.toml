@@ -1,7 +1,7 @@
 [project]
 name = "step-by-step-rag"
-version = "5.0.0"
-description = "Step-by-Step RAG Tutorial - Day 5"
+version = "3.0.0"
+description = "Step-by-Step RAG Tutorial - Day 3"
 requires-python = ">=3.11"
 
 # Web Framework
@@ -43,15 +43,7 @@ dependencies = [
     "rank-bm25>=0.2.2",           # BM25 for hybrid search / BM25 混合检索
     "numpy>=1.26.0",               # For similarity calculations / 相似度计算
     "sentence-transformers>=3.0.0", # For re-ranking / 重排序
-
-    # Evaluation & Observability (Day 5)
-    # 评估与可观测性（Day 5）
-    "ragas>=0.2.0",               # RAG evaluation framework / RAG 评估框架
-    "datasets>=3.0.0",            # For Ragas dataset handling / Ragas 数据集处理
-    "tqdm>=4.66.0",               # Progress bars for evaluation / 评估进度条
-    "opentelemetry-api>=1.20.0",  # Tracing API / 追踪 API
-    "opentelemetry-sdk>=1.20.0",  # Tracing SDK / 追踪 SDK
-    "structlog>=24.0.0",          # Structured logging / 结构化日志
+    "jieba>=0.42.1",              # Chinese text segmentation / 中文分词
 ]
 
 [build-system]

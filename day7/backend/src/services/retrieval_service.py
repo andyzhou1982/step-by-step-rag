@@ -10,10 +10,15 @@ import asyncio
 from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
 import numpy as np
+import re
 
 # BM25 for keyword search
 # 用于关键词搜索的 BM25
 from rank_bm25 import BM25Okapi
+
+# Chinese text segmentation
+# 中文分词
+import jieba
 
 # LangChain components
 # LangChain 组件
@@ -79,8 +84,8 @@ class BM25Index:
 
     def _tokenize(self, text: str) -> List[str]:
         """
-        Tokenize text for BM25
-        为 BM25 对文本进行分词
+        Tokenize text for BM25 (supports Chinese and English)
+        为 BM25 对文本进行分词（支持中英文）
 
         Args:
             text: Text to tokenize
@@ -89,14 +94,28 @@ class BM25Index:
             List of tokens
             token 列表
         """
-        # Simple tokenization: lowercase and split on whitespace/punctuation
-        # 简单分词：小写并在空格/标点上分割
-        text = text.lower()
-        # Split on common separators
-        # 在常见分隔符上分割
-        for char in '.,!?;:()[]{}"\'-–—\n\t':
-            text = text.replace(char, ' ')
-        return [t for t in text.split() if len(t) > 1]
+        if not text:
+            return []
+
+        # Check if text contains Chinese characters
+        # 检查文本是否包含中文字符
+        has_chinese = bool(re.search(r'[\u4e00-\u9fff]', text))
+
+        if has_chinese:
+            # Use jieba for Chinese text segmentation
+            # 使用 jieba 进行中文分词
+            tokens = list(jieba.cut(text))
+        else:
+            # Simple tokenization for English: lowercase and split
+            # 英文简单分词：小写并分割
+            text = text.lower()
+            for char in '.,!?;:()[]{}"\'-–—\n\t':
+                text = text.replace(char, ' ')
+            tokens = text.split()
+
+        # Filter out single-character tokens and stopwords
+        # 过滤单字符 token 和停用词
+        return [t.lower() for t in tokens if len(t.strip()) > 1]
 
     def search(self, query: str, top_k: int = 10) -> List[Tuple[int, float]]:
         """
