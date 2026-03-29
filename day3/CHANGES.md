@@ -61,6 +61,51 @@ class VectorStoreService:
 
 ---
 
+### BM25 中文分词修复 (2026-03-30)
+
+**问题描述 / Issue:**
+- BM25 搜索中文内容时，所有 score 都是 0.0
+- 原因：`_tokenize` 方法使用空格分词，对中文完全无效
+
+| 文本 | 原分词结果 | 期望分词结果 |
+|------|-----------|-------------|
+| `"什么是RAG"` | `['什么是rag']` | `['什么', '是', 'rag']` |
+| `"检索增强生成"` | `['检索增强生成']` | `['检索', '增强', '生成']` |
+
+**修复方案 / Solution:**
+
+添加 `jieba` 依赖并修改分词方法：
+
+```python
+# pyproject.toml
+"jieba>=0.42.1",  # Chinese text segmentation / 中文分词
+
+# retrieval_service.py
+import jieba
+import re
+
+def _tokenize(self, text: str) -> List[str]:
+    if not text:
+        return []
+
+    # 检查是否包含中文
+    has_chinese = bool(re.search(r'[\u4e00-\u9fff]', text))
+
+    if has_chinese:
+        # 使用 jieba 进行中文分词
+        tokens = list(jieba.cut(text))
+    else:
+        # 英文简单分词
+        text = text.lower()
+        for char in '.,!?;:()[]{}"\'-–—\n\t':
+            text = text.replace(char, ' ')
+        tokens = text.split()
+
+    return [t.lower() for t in tokens if len(t.strip()) > 1]
+```
+
+---
+
 ### 文档列表持久化修复
 
 **问题描述 / Issue:**

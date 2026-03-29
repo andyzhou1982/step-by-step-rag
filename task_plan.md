@@ -14,13 +14,14 @@
 ## Current Phase
 Phase 8: Day 7 完成 + Bug 修复
 
-### 最近修复 (2026-03-27~28)
+### 最近修复 (2026-03-27~30)
 - [x] 修复 BM25 索引构建使用空查询卡住的问题
 - [x] 修复 BM25 索引构建时的事件循环冲突问题
 - [x] 修复 PGVector 表列名错误 (langchain_id, langchain_metadata)
 - [x] 修复文件扩展名解析错误
 - [x] 文档列表持久化到 PostgreSQL（day1-day7 全部修复）
 - [x] 前端支持多种文件格式上传
+- [x] BM25 添加 jieba 中文分词支持
 
 ## Technology Stack Decisions
 | Component | Choice | Rationale |
@@ -131,6 +132,7 @@ Phase 8: Day 7 完成 + Bug 修复
 | PGVector 列名错误 "column 'id' does not exist" | 使用 `id`, `metadata` 列名 | 改为 `langchain_id`, `langchain_metadata` |
 | 文档列表重启后丢失 | 使用内存字典 `document_registry` | 持久化到 PostgreSQL `document_registry` 表 |
 | 文件扩展名解析错误 | 使用 `filename.split('.')[-1]` | 改用 `Path(filename).suffix.lower()` |
+| BM25 中文搜索 score 全为 0.0 | 使用空格分词 `_tokenize` | 添加 `jieba` 进行中文分词 |
 
 ## Project Structure
 ```

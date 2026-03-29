@@ -5,6 +5,33 @@
   WHEN: 每个阶段完成或有重要进展时更新
 -->
 
+## Session: 2026-03-27~30 (Bug 修复)
+
+### Bug 修复阶段
+- **Status:** complete
+- **Started:** 2026-03-27
+- Actions taken:
+  - 修复 BM25 索引构建使用空查询卡住的问题
+  - 修复 BM25 索引构建时的事件循环冲突问题
+  - 修复 PGVector 表列名错误 (langchain_id, langchain_metadata)
+  - 修复文件扩展名解析错误
+  - 文档列表持久化到 PostgreSQL（day1-day7 全部修复）
+  - 前端支持多种文件格式上传
+  - BM25 添加 jieba 中文分词支持
+- Files created/modified:
+  - day1-day7/backend/src/services/document_registry.py (新增)
+  - day1-day7/backend/src/routers/documents.py (修改)
+  - day1-day7/backend/src/main.py (修改)
+  - day3-day7/backend/src/services/vector_store.py (修改)
+  - day3-day7/backend/src/services/retrieval_service.py (添加 jieba)
+  - day3-day7/backend/pyproject.toml (添加 jieba 依赖)
+  - day3/CHANGES.md (更新文档)
+  - task_plan.md (更新错误记录)
+  - findings.md (更新问题记录)
+  - progress.md (更新进度)
+
+---
+
 ## Session: 2026-03-22
 
 ### Phase 1: 技术栈确认与规划

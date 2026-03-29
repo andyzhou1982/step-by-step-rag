@@ -155,7 +155,11 @@ except FileNotFoundError as e:
 -->
 | Issue | Resolution |
 |-------|------------|
-| (暂无) | - |
+| BM25 中文搜索 score 全为 0.0 | 使用 `jieba` 库进行中文分词，空格分词对中文无效 |
+| BM25 索引构建卡住 | 改用直接 SQL 查询 `SELECT langchain_id, content, langchain_metadata FROM table` |
+| 事件循环冲突 | 创建独立的 `create_async_engine` 而非复用 PGEngine 连接池 |
+| PGVector 列名错误 | 使用 `langchain_id`, `langchain_metadata` 而非 `id`, `metadata` |
+| 文档列表重启丢失 | 持久化到 PostgreSQL `document_registry` 表 | - |
 
 ## Visual/Browser Findings
 <!--
