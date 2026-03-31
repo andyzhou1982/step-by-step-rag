@@ -9,6 +9,8 @@ Day 3: Added hybrid retrieval with BM25 indexing
 Day 3： 添加了带 BM25 索引的混合检索
 """
 
+import traceback
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -18,7 +20,11 @@ from services.vector_store import vector_store
 from services.retrieval_service import retrieval_service
 from services.document_registry import document_registry
 from models.schemas import HealthResponse
-from config import settings
+from config import settings, setup_logging, get_logger
+
+# Initialize logging system
+setup_logging()
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
@@ -29,40 +35,32 @@ async def lifespan(app: FastAPI):
     """
     # Startup: Connect to databases
     # 启动: 连接数据库
-    print("Starting up... Connecting to databases.")
-    print("正在启动... 连接数据库。")
+    logger.info("Starting up... Connecting to databases.")
     await vector_store.connect()
     await document_registry.connect()
-    print("Databases connected.")
-    print("数据库已连接。")
+    logger.info("Databases connected.")
 
     # Day 3: Build BM25 index from existing documents
     # Day 3： 从现有文档构建 BM25 索引
-    print("Building BM25 index...")
-    print("正在构建 BM25 索引...")
+    logger.info("Building BM25 index...")
     try:
         documents = await vector_store.get_all_documents_for_bm25()
         if documents:
             retrieval_service.build_bm25_index(documents)
-            print(f"BM25 index built with {len(documents)} documents.")
-            print(f"BM25 索引已构建，包含 {len(documents)} 个文档。")
+            logger.info(f"BM25 index built with {len(documents)} documents.")
         else:
-            print("No documents found for BM25 index.")
-            print("未找到用于 BM25 索引的文档。")
+            logger.info("No documents found for BM25 index.")
     except Exception as e:
-        print(f"Warning: Failed to build BM25 index: {e}")
-        print(f"警告：构建 BM25 索引失败：{e}")
+        logger.warning(f"Failed to build BM25 index: {e}", exc_info=True)
 
     yield
 
     # Shutdown: Disconnect from databases
     # 关闭: 断开数据库连接
-    print("Shutting down... Disconnecting from databases.")
-    print("正在关闭... 断开数据库连接。")
+    logger.info("Shutting down... Disconnecting from databases.")
     await vector_store.disconnect()
     await document_registry.disconnect()
-    print("Databases disconnected.")
-    print("数据库已断开。")
+    logger.info("Databases disconnected.")
 
 
 # Create FastAPI application

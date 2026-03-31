@@ -6,6 +6,8 @@ Day 2: Enhanced with multi-format document support
 Day 2： 增强了多格式文档支持
 """
 
+import traceback
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -14,7 +16,11 @@ from routers import documents, chat
 from services.vector_store import vector_store
 from services.document_registry import document_registry
 from models.schemas import HealthResponse
-from config import settings
+from config import settings, setup_logging, get_logger
+
+# Initialize logging system
+setup_logging()
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
@@ -25,23 +31,30 @@ async def lifespan(app: FastAPI):
     """
     # Startup: Connect to databases
     # 启动: 连接数据库
-    print("Starting up... Connecting to databases.")
-    print("正在启动... 连接数据库。")
-    await vector_store.connect()
-    await document_registry.connect()
-    print("Databases connected.")
-    print("数据库已连接。")
+    logger.info("Starting up... Connecting to databases.")
+    logger.info("正在启动... 连接数据库。")
+    try:
+        await vector_store.connect()
+        await document_registry.connect()
+        logger.info("Databases connected.")
+        logger.info("数据库已连接。")
+    except Exception as e:
+        logger.error(f"Failed to connect to databases: {e}", exc_info=True)
+        raise
 
     yield
 
     # Shutdown: Disconnect from databases
     # 关闭: 断开数据库连接
-    print("Shutting down... Disconnecting from databases.")
-    print("正在关闭... 断开数据库连接。")
-    await vector_store.disconnect()
-    await document_registry.disconnect()
-    print("Databases disconnected.")
-    print("数据库已断开。")
+    logger.info("Shutting down... Disconnecting from databases.")
+    logger.info("正在关闭... 断开数据库连接。")
+    try:
+        await vector_store.disconnect()
+        await document_registry.disconnect()
+        logger.info("Databases disconnected.")
+        logger.info("数据库已断开。")
+    except Exception as e:
+        logger.warning(f"Error during shutdown: {e}", exc_info=True)
 
 
 # Create FastAPI application

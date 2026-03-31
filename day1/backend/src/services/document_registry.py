@@ -6,11 +6,14 @@ Day 1 Enhancement: Store document metadata in PostgreSQL instead of memory
 Day 1 增强： 将文档元数据存储在 PostgreSQL 中而不是内存中
 """
 
+import traceback
 from datetime import datetime
 from typing import List, Dict, Optional
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
-from config import settings
+from config import settings, get_logger
+
+logger = get_logger(__name__)
 
 
 class DocumentRegistryService:
@@ -98,7 +101,8 @@ class DocumentRegistryService:
                 await conn.commit()
             return True
         except Exception as e:
-            print(f"Error adding document to registry: {e}")
+            logger.error(f"Error adding document to registry: {e}")
+            logger.debug(f"Traceback:\n{traceback.format_exc()}")
             return False
 
     async def get_document(self, doc_id: str) -> Optional[Dict]:
@@ -130,7 +134,8 @@ class DocumentRegistryService:
                     }
                 return None
         except Exception as e:
-            print(f"Error getting document from registry: {e}")
+            logger.error(f"Error getting document from registry: {e}")
+            logger.debug(f"Traceback:\n{traceback.format_exc()}")
             return None
 
     async def list_documents(self) -> List[Dict]:
@@ -160,7 +165,8 @@ class DocumentRegistryService:
                     for row in rows
                 ]
         except Exception as e:
-            print(f"Error listing documents from registry: {e}")
+            logger.error(f"Error listing documents from registry: {e}")
+            logger.debug(f"Traceback:\n{traceback.format_exc()}")
             return []
 
     async def delete_document(self, doc_id: str) -> bool:
@@ -185,7 +191,8 @@ class DocumentRegistryService:
                 await conn.commit()
                 return result.fetchone() is not None
         except Exception as e:
-            print(f"Error deleting document from registry: {e}")
+            logger.error(f"Error deleting document from registry: {e}")
+            logger.debug(f"Traceback:\n{traceback.format_exc()}")
             return False
 
 

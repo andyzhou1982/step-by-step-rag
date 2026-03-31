@@ -9,7 +9,6 @@ Day 4 Enhancement: Streaming, citations, confidence scoring
 Day 4 增强： 流式输出、引用溯源、置信度评分
 """
 
-import logging
 import traceback
 
 from fastapi import APIRouter, HTTPException
@@ -18,14 +17,6 @@ from typing import Dict, List
 import uuid
 import json
 from datetime import datetime
-
-# Configure logging
-# 配置日志
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
 
 from models.schemas import (
     ChatRequest,
@@ -42,7 +33,11 @@ from services.vector_store import vector_store
 from services.llm import llm_service
 from services.retrieval_service import retrieval_service, SearchResult
 from services.citation_service import citation_service
-from config import settings
+from config import settings, get_logger
+
+# Get logger for this module
+# 获取此模块的日志记录器
+logger = get_logger(__name__)
 
 # Create router
 # 创建路由器
@@ -340,6 +335,8 @@ async def ask_question(request: ChatRequest):
         )
 
     except Exception as e:
+        logger.error(f"Error processing question: {str(e)}")
+        logger.debug(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail=f"Error processing question: {str(e)} "
@@ -501,7 +498,8 @@ async def stream_answer(request: ChatRequest):
         except Exception as e:
             # Log the error with full traceback
             # 记录错误和完整堆栈
-            logger.error(f"Stream error: {str(e)}\n{traceback.format_exc()}")
+            logger.error(f"Stream error: {str(e)}")
+            logger.debug(traceback.format_exc())
             error_chunk = StreamChunk(
                 type="error",
                 error=str(e),

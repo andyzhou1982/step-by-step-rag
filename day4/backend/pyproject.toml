@@ -53,8 +53,4 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
-# Use Tsinghua mirror for faster downloads
-# 使用清华镜像源加速下载
-[[tool.uv.index]]
-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
-default = true
+

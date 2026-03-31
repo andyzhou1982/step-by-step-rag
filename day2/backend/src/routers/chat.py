@@ -6,7 +6,6 @@ Day 2 Enhancement: Support for file type filtering in search
 Day 2 增强： 支持搜索中的文件类型过滤
 """
 
-import logging
 import traceback
 
 from fastapi import APIRouter, HTTPException
@@ -16,15 +15,11 @@ import uuid
 from models.schemas import ChatRequest, ChatResponse, SourceReference
 from services.vector_store import vector_store
 from services.llm import llm_service
-from config import settings
+from config import settings, get_logger
 
-# Configure logging
-# 配置日志
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Get logger for this module
+# 获取此模块的日志记录器
+logger = get_logger(__name__)
 
 # Create router
 # 创建路由器
@@ -128,7 +123,8 @@ async def ask_question(request: ChatRequest):
     except Exception as e:
         # Log the error with full traceback
         # 记录错误和完整堆栈
-        logger.error(f"Error processing question: {str(e)}\n{traceback.format_exc()}")
+        logger.error(f"Error processing question: {str(e)}")
+        logger.debug(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail=f"Error processing question: {str(e)} "

@@ -16,12 +16,49 @@ Day 6： 添加了安全和认证配置
 """
 
 import os
+import logging
+import sys
 from dotenv import load_dotenv
 from typing import Optional
 
 # Load environment variables from .env file
 # 从 .env 文件加载环境变量
 load_dotenv()
+
+
+def setup_logging(
+    level: str = "INFO",
+    log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    log_file: Optional[str] = None
+) -> None:
+    """
+    Setup unified logging configuration for the entire application
+    为整个应用设置统一的日志配置
+    """
+    log_level = os.getenv("LOG_LEVEL", level).upper()
+    numeric_level = getattr(logging, log_level, logging.INFO)
+
+    handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
+
+    if log_file:
+        handlers.append(logging.FileHandler(log_file, encoding="utf-8"))
+
+    logging.basicConfig(
+        level=numeric_level,
+        format=log_format,
+        handlers=handlers,
+        force=True
+    )
+
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
+
+
+def get_logger(name: str) -> logging.Logger:
+    """Get a logger instance with the given name"""
+    return logging.getLogger(name)
 
 
 class Settings:

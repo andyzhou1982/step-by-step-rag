@@ -6,11 +6,16 @@ Day 3 Enhancement: Store document metadata in PostgreSQL instead of memory
 Day 3 增强： 将文档元数据存储在 PostgreSQL 中而不是内存中
 """
 
+import traceback
 from datetime import datetime
 from typing import List, Dict, Optional
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
-from config import settings
+from config import settings, get_logger
+
+# Get logger for this module
+# 获取此模块的日志记录器
+logger = get_logger(__name__)
 
 
 class DocumentRegistryService:
@@ -116,7 +121,8 @@ class DocumentRegistryService:
                 await conn.commit()
             return True
         except Exception as e:
-            print(f"Error adding document to registry: {e}")
+            logger.error(f"Error adding document to registry: {e}")
+            logger.debug(f"Add document error traceback:\n{traceback.format_exc()}")
             return False
 
     async def get_document(self, doc_id: str) -> Optional[Dict]:
@@ -151,7 +157,8 @@ class DocumentRegistryService:
                     }
                 return None
         except Exception as e:
-            print(f"Error getting document from registry: {e}")
+            logger.error(f"Error getting document from registry: {e}")
+            logger.debug(f"Get document error traceback:\n{traceback.format_exc()}")
             return None
 
     async def list_documents(self) -> List[Dict]:
@@ -184,7 +191,8 @@ class DocumentRegistryService:
                     for row in rows
                 ]
         except Exception as e:
-            print(f"Error listing documents from registry: {e}")
+            logger.error(f"Error listing documents from registry: {e}")
+            logger.debug(f"List documents error traceback:\n{traceback.format_exc()}")
             return []
 
     async def delete_document(self, doc_id: str) -> bool:
@@ -209,7 +217,8 @@ class DocumentRegistryService:
                 await conn.commit()
                 return result.fetchone() is not None
         except Exception as e:
-            print(f"Error deleting document from registry: {e}")
+            logger.error(f"Error deleting document from registry: {e}")
+            logger.debug(f"Delete document error traceback:\n{traceback.format_exc()}")
             return False
 
 

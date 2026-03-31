@@ -20,19 +20,25 @@
   - BM25 添加 jieba 中文分词支持
   - 修复 day4-day7 VSCode 导入警告（添加 .vscode/settings.json）
   - 修复流式输出引用提取错误（findall → finditer）
-  - 增强全项目错误日志记录（day1-day7 统一添加 logging 模块和完整堆栈输出）
+  - 增强全项目统一日志系统（day1-day7）
+    - config.py: 添加 setup_logging() 和 get_logger() 函数
+    - main.py: 初始化日志系统，print → logger
+    - routers/chat.py: 使用 get_logger(__name__)
+    - services/*.py: 所有 print 替换为 logger
+    - 支持环境变量 LOG_LEVEL 控制日志级别
+    - 第三方库日志降噪（httpx, httpcore, urllib3, asyncio）
 - Files created/modified:
+  - day1-day7/backend/src/config.py (添加日志函数)
+  - day1-day7/backend/src/main.py (初始化日志)
+  - day1-day7/backend/src/routers/chat.py (使用 get_logger)
   - day1-day7/backend/src/services/document_registry.py (新增)
-  - day1-day7/backend/src/routers/documents.py (修改)
-  - day1-day7/backend/src/main.py (修改)
-  - day3-day7/backend/src/services/vector_store.py (修改)
+  - day1-day7/backend/src/services/vector_store.py (修改)
   - day3-day7/backend/src/services/retrieval_service.py (添加 jieba)
   - day3-day7/backend/pyproject.toml (添加 jieba 依赖)
-  - day3/CHANGES.md (更新文档)
-  - task_plan.md (更新错误记录)
-  - findings.md (更新问题记录)
-  - progress.md (更新进度)
   - day4-day7/backend/src/services/citation_service.py (修复 findall→finditer)
+  - day4-day7/.vscode/settings.json (新增)
+  - day3/CHANGES.md (更新文档)
+  - progress.md (更新进度)
 
 ---
 

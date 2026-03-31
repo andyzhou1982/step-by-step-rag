@@ -7,18 +7,30 @@ Day 2： 增强了多格式文档支持
 
 Day 3: Added hybrid retrieval with BM25 indexing
 Day 3： 添加了带 BM25 索引的混合检索
+
+Day 4: Added unified logging system
+Day 4： 添加了统一的日志系统
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+import traceback
 
 from routers import documents, chat
 from services.vector_store import vector_store
 from services.retrieval_service import retrieval_service
 from services.document_registry import document_registry
 from models.schemas import HealthResponse
-from config import settings
+from config import settings, setup_logging, get_logger
+
+# Initialize logging system first
+# 首先初始化日志系统
+setup_logging()
+
+# Get logger for this module
+# 获取此模块的日志记录器
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
@@ -29,40 +41,41 @@ async def lifespan(app: FastAPI):
     """
     # Startup: Connect to databases
     # 启动: 连接数据库
-    print("Starting up... Connecting to databases.")
-    print("正在启动... 连接数据库。")
+    logger.info("Starting up... Connecting to databases.")
+    logger.info("正在启动... 连接数据库。")
     await vector_store.connect()
     await document_registry.connect()
-    print("Databases connected.")
-    print("数据库已连接。")
+    logger.info("Databases connected.")
+    logger.info("数据库已连接。")
 
     # Day 3: Build BM25 index from existing documents
     # Day 3： 从现有文档构建 BM25 索引
-    print("Building BM25 index...")
-    print("正在构建 BM25 索引...")
+    logger.info("Building BM25 index...")
+    logger.info("正在构建 BM25 索引...")
     try:
         documents = await vector_store.get_all_documents_for_bm25()
         if documents:
             retrieval_service.build_bm25_index(documents)
-            print(f"BM25 index built with {len(documents)} documents.")
-            print(f"BM25 索引已构建，包含 {len(documents)} 个文档。")
+            logger.info(f"BM25 index built with {len(documents)} documents.")
+            logger.info(f"BM25 索引已构建，包含 {len(documents)} 个文档。")
         else:
-            print("No documents found for BM25 index.")
-            print("未找到用于 BM25 索引的文档。")
+            logger.info("No documents found for BM25 index.")
+            logger.info("未找到用于 BM25 索引的文档。")
     except Exception as e:
-        print(f"Warning: Failed to build BM25 index: {e}")
-        print(f"警告：构建 BM25 索引失败：{e}")
+        logger.warning(f"Failed to build BM25 index: {e}")
+        logger.warning(f"构建 BM25 索引失败：{e}")
+        logger.debug(f"BM25 build error traceback:\n{traceback.format_exc()}")
 
     yield
 
     # Shutdown: Disconnect from databases
     # 关闭: 断开数据库连接
-    print("Shutting down... Disconnecting from databases.")
-    print("正在关闭... 断开数据库连接。")
+    logger.info("Shutting down... Disconnecting from databases.")
+    logger.info("正在关闭... 断开数据库连接。")
     await vector_store.disconnect()
     await document_registry.disconnect()
-    print("Databases disconnected.")
-    print("数据库已断开。")
+    logger.info("Databases disconnected.")
+    logger.info("数据库已断开。")
 
 
 # Create FastAPI application

@@ -4,12 +4,62 @@ RAG 应用的配置管理
 """
 
 import os
+import logging
+import sys
 from dotenv import load_dotenv
 from typing import Optional
 
 # Load environment variables from .env file
 # 从 .env 文件加载环境变量
 load_dotenv()
+
+
+def setup_logging(
+    level: str = "INFO",
+    log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    log_file: Optional[str] = None
+) -> None:
+    """
+    Setup unified logging configuration for the entire application
+    为整个应用设置统一的日志配置
+
+    Args:
+        level: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+               日志级别
+        log_format: Log message format
+                    日志消息格式
+        log_file: Optional log file path. If None, logs only to console
+                  可选的日志文件路径。如果为 None，则仅输出到控制台
+    """
+    log_level = os.getenv("LOG_LEVEL", level).upper()
+    numeric_level = getattr(logging, log_level, logging.INFO)
+
+    handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
+
+    if log_file:
+        handlers.append(logging.FileHandler(log_file, encoding="utf-8"))
+
+    logging.basicConfig(
+        level=numeric_level,
+        format=log_format,
+        handlers=handlers,
+        force=True
+    )
+
+    # Reduce noise from third-party libraries
+    # 减少第三方库的日志噪音
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
+
+
+def get_logger(name: str) -> logging.Logger:
+    """
+    Get a logger instance with the given name
+    获取具有给定名称的日志记录器实例
+    """
+    return logging.getLogger(name)
 
 
 class Settings:

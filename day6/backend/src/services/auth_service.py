@@ -8,6 +8,7 @@ Day 6： 安全与治理
 
 import os
 import json
+import traceback
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from dataclasses import dataclass, field, asdict
@@ -15,7 +16,9 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 import uuid
 
-from config import settings
+from config import settings, get_logger
+
+logger = get_logger(__name__)
 
 
 # Password hashing context
@@ -119,7 +122,8 @@ class AuthService:
                         )
                         self._users[user.id] = user
         except Exception as e:
-            print(f"Error loading users: {e}")
+            logger.error(f"Error loading users: {e}")
+            logger.debug(f"Traceback:\n{traceback.format_exc()}")
             # Initialize with empty dict if loading fails
             # 如果加载失败则初始化为空字典
             self._users = {}
@@ -151,7 +155,8 @@ class AuthService:
             with open(self._users_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            print(f"Error saving users: {e}")
+            logger.error(f"Error saving users: {e}")
+            logger.debug(f"Traceback:\n{traceback.format_exc()}")
 
     def _create_default_admin(self):
         """Create default admin user
@@ -166,7 +171,7 @@ class AuthService:
         )
         self._users[admin_user.id] = admin_user
         self._save_users()
-        print("Created default admin user: admin / admin123")
+        logger.info("Created default admin user: admin / admin123")
 
     def hash_password(self, password: str) -> str:
         """

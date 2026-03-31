@@ -8,13 +8,16 @@ Day 6： 安全与治理
 
 import os
 import json
+import traceback
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, field, asdict
 from enum import Enum
 import uuid
 
-from config import settings
+from config import settings, get_logger
+
+logger = get_logger(__name__)
 
 
 class AuditAction(Enum):
@@ -144,7 +147,8 @@ class AuditService:
                         )
                         self._logs.append(log)
         except Exception as e:
-            print(f"Error loading audit logs: {e}")
+            logger.error(f"Error loading audit logs: {e}")
+            logger.debug(f"Traceback:\n{traceback.format_exc()}")
             self._logs = []
 
     def _save_logs(self):
@@ -166,7 +170,8 @@ class AuditService:
             with open(self._logs_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            print(f"Error saving audit logs: {e}")
+            logger.error(f"Error saving audit logs: {e}")
+            logger.debug(f"Traceback:\n{traceback.format_exc()}")
 
     def log_action(
         self,
