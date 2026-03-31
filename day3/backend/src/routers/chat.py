@@ -6,6 +6,9 @@ Day 3 Enhancement: Hybrid search, query rewriting, and re-ranking
 Day 3 增强： 混合检索、查询重写和重排序
 """
 
+import logging
+import traceback
+
 from fastapi import APIRouter, HTTPException
 from typing import Dict, List
 import uuid
@@ -21,6 +24,14 @@ from services.vector_store import vector_store
 from services.llm import llm_service
 from services.retrieval_service import retrieval_service
 from config import settings
+
+# Configure logging
+# 配置日志
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 # Create router
 # 创建路由器
@@ -201,6 +212,9 @@ async def ask_question(request: ChatRequest):
         )
 
     except Exception as e:
+        # Log the error with full traceback
+        # 记录错误和完整堆栈
+        logger.error(f"Error processing question: {str(e)}\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
             detail=f"Error processing question: {str(e)} "

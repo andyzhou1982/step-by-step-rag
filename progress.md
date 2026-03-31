@@ -20,6 +20,7 @@
   - BM25 添加 jieba 中文分词支持
   - 修复 day4-day7 VSCode 导入警告（添加 .vscode/settings.json）
   - 修复流式输出引用提取错误（findall → finditer）
+  - 增强全项目错误日志记录（day1-day7 统一添加 logging 模块和完整堆栈输出）
 - Files created/modified:
   - day1-day7/backend/src/services/document_registry.py (新增)
   - day1-day7/backend/src/routers/documents.py (修改)
