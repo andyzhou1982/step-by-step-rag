@@ -18,6 +18,8 @@
   - 文档列表持久化到 PostgreSQL（day1-day7 全部修复）
   - 前端支持多种文件格式上传
   - BM25 添加 jieba 中文分词支持
+  - 修复 day4-day7 VSCode 导入警告（添加 .vscode/settings.json）
+  - 修复流式输出引用提取错误（findall → finditer）
 - Files created/modified:
   - day1-day7/backend/src/services/document_registry.py (新增)
   - day1-day7/backend/src/routers/documents.py (修改)
@@ -29,6 +31,7 @@
   - task_plan.md (更新错误记录)
   - findings.md (更新问题记录)
   - progress.md (更新进度)
+  - day4-day7/backend/src/services/citation_service.py (修复 findall→finditer)
 
 ---
 

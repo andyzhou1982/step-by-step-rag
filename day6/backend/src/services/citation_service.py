@@ -81,10 +81,10 @@ class CitationService:
 
         # Find all citation markers in the answer
         # 在答案中查找所有引用标记
-        matches = self.CITATION_PATTERN.findall(answer)
-
-        for match in matches:
-            citation_id = int(match.group(1))
+        for match in self.CITATION_PATTERN.finditer(answer):
+            # Get the first non-empty group (from multiple capture groups)
+            # 获取第一个非空的捕获组
+            citation_id = int(match.group(1) or match.group(2) or match.group(3))
             citations.append(Citation(
                 citation_id=citation_id,
                 chunk_id="",
