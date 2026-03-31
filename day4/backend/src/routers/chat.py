@@ -9,12 +9,23 @@ Day 4 Enhancement: Streaming, citations, confidence scoring
 Day 4 增强： 流式输出、引用溯源、置信度评分
 """
 
+import logging
+import traceback
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from typing import Dict, List
 import uuid
 import json
 from datetime import datetime
+
+# Configure logging
+# 配置日志
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 from models.schemas import (
     ChatRequest,
@@ -488,6 +499,9 @@ async def stream_answer(request: ChatRequest):
             _update_conversation(conversation_id, request.question, full_answer, sources)
 
         except Exception as e:
+            # Log the error with full traceback
+            # 记录错误和完整堆栈
+            logger.error(f"Stream error: {str(e)}\n{traceback.format_exc()}")
             error_chunk = StreamChunk(
                 type="error",
                 error=str(e),
