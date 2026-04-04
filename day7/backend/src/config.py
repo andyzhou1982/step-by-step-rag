@@ -10,23 +10,28 @@ Day 4： 添加了流式输出和上下文配置
 
 Day 5: Added evaluation and tracing configuration
 Day 5： 添加了评估和追踪配置
-
-Day 6: Added security and authentication configuration
-Day 6： 添加了安全和认证配置
-
-Day 7: Added production optimization configuration
-Day 7： 添加了生产优化配置
 """
 
 import os
 import logging
 import sys
+from pathlib import Path
 from dotenv import load_dotenv
 from typing import Optional
 
 # Load environment variables from .env file
 # 从 .env 文件加载环境变量
-load_dotenv()
+# Try multiple locations to find .env file
+# 尝试多个位置查找 .env 文件
+env_paths = [
+    Path(__file__).parent.parent / ".env",  # backend/.env (when running from src/)
+    Path(__file__).parent / ".env",          # src/.env
+    Path.cwd() / ".env",                     # current working directory
+]
+for env_path in env_paths:
+    if env_path.exists():
+        load_dotenv(env_path)
+        break
 
 
 def setup_logging(
@@ -89,7 +94,6 @@ class Settings:
         # 服务器配置
         self.host: str = os.getenv("HOST", "0.0.0.0")
         self.port: int = int(os.getenv("PORT", "8000"))
-        self.debug: bool = os.getenv("DEBUG", "false").lower() == "true"
 
         # RAG Configuration
         # RAG 配置
@@ -117,49 +121,6 @@ class Settings:
         self.evaluation_enabled: bool = os.getenv("EVALUATION_ENABLED", "true").lower() == "true"
         self.tracing_enabled: bool = os.getenv("TRACING_ENABLED", "true").lower() == "true"
         self.metrics_retention_days: int = int(os.getenv("METRICS_RETENTION_DAYS", "30"))
-
-        # Security Configuration (Day 6)
-        # 安全配置（Day 6）
-        self.jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
-        self.jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
-        self.jwt_expiration_hours: int = int(os.getenv("JWT_EXPIRATION_HOURS", "24"))
-        self.password_min_length: int = int(os.getenv("PASSWORD_MIN_LENGTH", "8"))
-        self.auth_enabled: bool = os.getenv("AUTH_ENABLED", "true").lower() == "true"
-        self.audit_enabled: bool = os.getenv("AUDIT_ENABLED", "true").lower() == "true"
-        self.content_filter_enabled: bool = os.getenv("CONTENT_FILTER_ENABLED", "true").lower() == "true"
-        self.audit_log_retention_days: int = int(os.getenv("AUDIT_LOG_RETENTION_DAYS", "90"))
-        self.max_login_attempts: int = int(os.getenv("MAX_LOGIN_ATTEMPTS", "5"))
-
-        # Production Configuration (Day 7)
-        # 生产配置（Day 7）
-        # Cache Configuration
-        # 缓存配置
-        self.cache_enabled: bool = os.getenv("CACHE_ENABLED", "true").lower() == "true"
-        self.cache_ttl_seconds: int = int(os.getenv("CACHE_TTL_SECONDS", "3600"))  # 1 hour default
-        self.cache_max_size: int = int(os.getenv("CACHE_MAX_SIZE", "1000"))
-        self.redis_url: Optional[str] = os.getenv("REDIS_URL", None)  # Redis for distributed caching
-
-        # Database Connection Pool
-        # 数据库连接池
-        self.db_pool_min_size: int = int(os.getenv("DB_POOL_MIN_SIZE", "5"))
-        self.db_pool_max_size: int = int(os.getenv("DB_POOL_MAX_SIZE", "20"))
-        self.db_pool_timeout: int = int(os.getenv("DB_POOL_TIMEOUT", "30"))
-
-        # Retry Configuration
-        # 重试配置
-        self.retry_max_attempts: int = int(os.getenv("RETRY_MAX_ATTEMPTS", "3"))
-        self.retry_backoff_factor: float = float(os.getenv("RETRY_BACKOFF_FACTOR", "2.0"))
-        self.retry_max_wait_seconds: int = int(os.getenv("RETRY_MAX_WAIT_SECONDS", "60"))
-
-        # Rate Limiting
-        # 速率限制
-        self.rate_limit_enabled: bool = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
-        self.rate_limit_requests_per_minute: int = int(os.getenv("RATE_LIMIT_REQUESTS_PER_MINUTE", "60"))
-
-        # Metrics Configuration
-        # 指标配置
-        self.metrics_enabled: bool = os.getenv("METRICS_ENABLED", "true").lower() == "true"
-        self.metrics_port: int = int(os.getenv("METRICS_PORT", "9090"))
 
 
 # Global settings instance

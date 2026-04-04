@@ -15,10 +15,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from routers import documents, chat
+from routers import documents, chat, evaluation, qa_history
 from services.vector_store import vector_store
 from services.retrieval_service import retrieval_service
 from services.document_registry import document_registry
+from services.qa_history_service import qa_history_service
 from models.schemas import HealthResponse
 from config import settings, setup_logging, get_logger
 
@@ -38,6 +39,7 @@ async def lifespan(app: FastAPI):
     logger.info("Starting up... Connecting to databases.")
     await vector_store.connect()
     await document_registry.connect()
+    await qa_history_service.connect()
     logger.info("Databases connected.")
 
     # Day 3: Build BM25 index from existing documents
@@ -60,6 +62,7 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down... Disconnecting from databases.")
     await vector_store.disconnect()
     await document_registry.disconnect()
+    await qa_history_service.disconnect()
     logger.info("Databases disconnected.")
 
 
@@ -124,6 +127,8 @@ app.add_middleware(
 # 包含路由器
 app.include_router(documents.router)
 app.include_router(chat.router)
+app.include_router(evaluation.router)
+app.include_router(qa_history.router)
 
 
 @app.get("/", response_model=dict)

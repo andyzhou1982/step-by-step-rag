@@ -13,9 +13,6 @@ Day 4 增强： 添加了引用溯源、流式输出和置信度评分
 
 Day 5 Enhancement: Added evaluation and tracing models
 Day 5 增强： 添加了评估和追踪模型
-
-Day 6 Enhancement: Added authentication, permission, and audit models
-Day 6 增强： 添加了认证、权限和审计模型
 """
 
 from pydantic import BaseModel
@@ -245,8 +242,8 @@ class HealthResponse(BaseModel):
     """
     status: str
     database: str
-    version: str = "6.0.0"
-    day: int = 6
+    version: str = "5.0.0"
+    day: int = 5
     # Day 3: BM25 index status
     # Day 3： BM25 索引状态
     bm25_indexed: bool = False
@@ -257,11 +254,6 @@ class HealthResponse(BaseModel):
     # Day 5： 评估和追踪支持
     evaluation_enabled: bool = True
     tracing_enabled: bool = True
-    # Day 6: Security features
-    # Day 6： 安全功能
-    auth_enabled: bool = True
-    audit_enabled: bool = True
-    content_filter_enabled: bool = True
 
 
 # ==================== Streaming Models (Day 4) ====================
@@ -487,214 +479,49 @@ class TraceInfoResponse(BaseModel):
     status: str = "OK"
 
 
-# ==================== Authentication Models (Day 6) ====================
-# ==================== 认证模型（Day 6）====================
+# ==================== QA History Models (Day 5) ====================
+# ==================== 问答历史模型（Day 5）====================
 
-class UserRegisterRequest(BaseModel):
+class QAHistoryRecord(BaseModel):
     """
-    User registration request
-    用户注册请求
+    A single QA history record
+    单条问答历史记录
 
-    Day 6: New model for user registration
-    Day 6： 用户注册的新模型
-    """
-    username: str
-    email: str
-    password: str
-    role: str = "user"  # "admin", "user", "viewer"
-
-
-class UserLoginRequest(BaseModel):
-    """
-    User login request
-    用户登录请求
-
-    Day 6: New model for user login
-    Day 6： 用户登录的新模型
-    """
-    username: str
-    password: str
-
-
-class TokenResponse(BaseModel):
-    """
-    JWT token response
-    JWT token 响应
-
-    Day 6: New model for token response
-    Day 6： token 响应的新模型
-    """
-    access_token: str
-    token_type: str = "bearer"
-    expires_in: int  # seconds
-    user_id: str
-    username: str
-    role: str
-
-
-class UserInfo(BaseModel):
-    """
-    User information response
-    用户信息响应
-
-    Day 6: New model for user info
-    Day 6： 用户信息的新模型
+    Day 5: New model for QA history storage
+    Day 5： 问答历史存储的新模型
     """
     id: str
-    username: str
-    email: str
-    role: str
-    is_active: bool
-    created_at: Optional[datetime] = None
-    last_login: Optional[datetime] = None
+    question: str
+    answer: str
+    contexts: List[str]
+    sources: Optional[List[Dict]] = None
+    retrieval_method: Optional[str] = None
+    confidence: float = 0.0
+    created_at: datetime
+    conversation_id: Optional[str] = None
 
 
-class UserListResponse(BaseModel):
+class QAHistoryListResponse(BaseModel):
     """
-    List of users response
-    用户列表响应
+    Response containing list of QA history records
+    包含问答历史列表的响应
 
-    Day 6: New model for user list
-    Day 6： 用户列表的新模型
+    Day 5: New model for QA history list endpoint
+    Day 5： 问答历史列表端点的新模型
     """
-    users: List[UserInfo]
+    records: List[QAHistoryRecord]
     total: int
+    page: int
+    page_size: int
 
 
-class UserRoleUpdateRequest(BaseModel):
+class QAHistoryExportRequest(BaseModel):
     """
-    User role update request
-    用户角色更新请求
+    Request to export QA history records
+    导出问答历史记录的请求
 
-    Day 6: New model for role update
-    Day 6： 角色更新的新模型
+    Day 5: New model for QA history export
+    Day 5： 问答历史导出的新模型
     """
-    role: str  # "admin", "user", "viewer"
-
-
-# ==================== Permission Models (Day 6) ====================
-# ==================== 权限模型（Day 6）====================
-
-class PermissionGrantRequest(BaseModel):
-    """
-    Request to grant a permission
-    授予权限的请求
-
-    Day 6: New model for permission grant
-    Day 6： 权限授予的新模型
-    """
-    document_id: str
-    user_id: str
-    permission: str  # "read", "write", "admin"
-
-
-class PermissionInfo(BaseModel):
-    """
-    Permission information
-    权限信息
-
-    Day 6: New model for permission info
-    Day 6： 权限信息的新模型
-    """
-    document_id: str
-    user_id: str
-    permission: str
-    granted_by: str
-    granted_at: datetime
-
-
-class DocumentPermissionsResponse(BaseModel):
-    """
-    Document permissions response
-    文档权限响应
-
-    Day 6: New model for document permissions
-    Day 6： 文档权限的新模型
-    """
-    document_id: str
-    permissions: List[PermissionInfo]
-
-
-# ==================== Audit Models (Day 6) ====================
-# ==================== 审计模型（Day 6）====================
-
-class AuditLogEntry(BaseModel):
-    """
-    Single audit log entry
-    单个审计日志条目
-
-    Day 6: New model for audit log entry
-    Day 6： 审计日志条目的新模型
-    """
-    id: str
-    timestamp: datetime
-    action: str
-    user_id: str
-    username: str
-    resource_type: str
-    resource_id: Optional[str] = None
-    details: Dict = {}
-    status: str = "success"
-
-
-class AuditLogListResponse(BaseModel):
-    """
-    List of audit logs response
-    审计日志列表响应
-
-    Day 6: New model for audit log list
-    Day 6： 审计日志列表的新模型
-    """
-    logs: List[AuditLogEntry]
-    total: int
-    limit: int
-    offset: int
-
-
-class AuditSummaryResponse(BaseModel):
-    """
-    Audit activity summary response
-    审计活动摘要响应
-
-    Day 6: New model for audit summary
-    Day 6： 审计摘要的新模型
-    """
-    period_days: int
-    total_actions: int
-    unique_users: int
-    action_counts: Dict[str, int]
-    resource_counts: Dict[str, int]
-
-
-# ==================== Content Filter Models (Day 6) ====================
-# ==================== 内容过滤模型（Day 6）====================
-
-class ContentFilterResult(BaseModel):
-    """
-    Content filter check result
-    内容过滤器检查结果
-
-    Day 6: New model for filter result
-    Day 6： 过滤器结果的新模型
-    """
-    result: str  # "safe", "warning", "blocked"
-    matched_pattern: Optional[str] = None
-    matched_content: Optional[str] = None
-    message: Optional[str] = None
-
-
-class ContentFilterResponse(BaseModel):
-    """
-    Content filter response
-    内容过滤器响应
-
-    Day 6: New model for filter response
-    Day 6： 过滤器响应的新模型
-    """
-    is_safe: bool
-    original_content: str
-    filtered_content: str
-    filter_results: List[ContentFilterResult]
-    warnings: List[str]
-    blocked_reasons: List[str]
-
+    record_ids: Optional[List[str]] = None
+    conversation_id: Optional[str] = None

@@ -10,9 +10,6 @@
 
  * Day 5 Enhancement: Evaluation API
  * Day 5 增强： 评估 API
-
- * Day 6 Enhancement: Authentication, Permissions, Audit API
- * Day 6 增强： 认证、权限、审计 API
  */
 import axios from 'axios'
 
@@ -28,30 +25,6 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 })
-
-// Add auth token to requests if available
-// 如果可用，将认证 token 添加到请求中
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
-
-// Handle 401 responses
-// 处理 401 响应
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('user_info')
-      window.location.reload()
-    }
-    return Promise.reject(error)
-  }
-)
 
 // ==================== Types ====================
 // ==================== 类型定义 ====================
@@ -236,87 +209,37 @@ export interface MetricExplanations {
   retrieval_metrics: Record<string, string>
 }
 
-// Day 6: Authentication types
-// Day 6： 认证类型
-export interface UserRegisterRequest {
-  username: string
-  email: string
-  password: string
-  role?: string
-}
-
-export interface UserLoginRequest {
-  username: string
-  password: string
-}
-
-export interface TokenResponse {
-  access_token: string
-  token_type: string
-  expires_in: number
-  user_id: string
-  username: string
-  role: string
-}
-
-export interface UserInfo {
-  id: string
-  username: string
-  email: string
-  role: string
-  is_active: boolean
-  created_at?: string
-  last_login?: string
-}
-
-export interface UserListResponse {
-  users: UserInfo[]
-  total: number
-}
-
-// Day 6: Permission types
-// Day 6： 权限类型
-export interface PermissionGrantRequest {
+// Day 5: QA History types
+// Day 5： 问答历史类型
+export interface QAHistorySource {
   document_id: string
-  user_id: string
-  permission: string  // "read", "write", "admin"
+  filename: string
+  score: number
+  citation_id: number
 }
 
-export interface PermissionInfo {
-  document_id: string
-  user_id: string
-  permission: string
-  granted_by: string
-  granted_at: string
-}
-
-// Day 6: Audit types
-// Day 6： 审计类型
-export interface AuditLogEntry {
+export interface QAHistoryRecord {
   id: string
-  timestamp: string
-  action: string
-  user_id: string
-  username: string
-  resource_type: string
-  resource_id?: string
-  details: Record<string, unknown>
-  status: string
+  question: string
+  answer: string
+  contexts: string[]
+  sources?: QAHistorySource[]
+  retrieval_method?: string
+  confidence: number
+  created_at: string
+  conversation_id?: string
 }
 
-export interface AuditLogListResponse {
-  logs: AuditLogEntry[]
+export interface QAHistoryListResponse {
+  records: QAHistoryRecord[]
   total: number
-  limit: number
-  offset: number
+  page: number
+  page_size: number
 }
 
-export interface AuditSummaryResponse {
-  period_days: number
-  total_actions: number
-  unique_users: number
-  action_counts: Record<string, number>
-  resource_counts: Record<string, number>
+export interface QAHistoryExportRequest {
+  record_ids?: string[]
+  conversation_id?: string
 }
 
 // ==================== API Functions ====================
@@ -532,210 +455,71 @@ export async function evaluationHealth(): Promise<{
   return response.data
 }
 
-// ==================== Authentication API Functions (Day 6) ====================
-// ==================== 认证 API 函数（Day 6）====================
+// ==================== QA History API Functions (Day 5) ====================
+// ==================== 问答历史 API 函数（Day 5）====================
 
 /**
- * Register a new user
- * 注册新用户
+ * Get QA history list with pagination
+ * 获取问答历史列表（分页）
  *
- * Day 6: User registration
- * Day 6： 用户注册
+ * Day 5: QA history for evaluation
+ * Day 5： 用于评估的问答历史
  */
-export async function register(request: UserRegisterRequest): Promise<TokenResponse> {
-  const response = await api.post<TokenResponse>('/auth/register', request)
-  return response.data
-}
-
-/**
- * Login and get JWT token
- * 登录并获取 JWT token
- *
- * Day 6: User login
- * Day 6： 用户登录
- */
-export async function login(request: UserLoginRequest): Promise<TokenResponse> {
-  const response = await api.post<TokenResponse>('/auth/login', request)
-  return response.data
-}
-
-/**
- * Logout current user
- * 登出当前用户
- *
- * Day 6: User logout
- * Day 6： 用户登出
- */
-export async function logout(): Promise<void> {
-  await api.post('/auth/logout')
-  localStorage.removeItem('auth_token')
-  localStorage.removeItem('user_info')
-}
-
-/**
- * Get current user information
- * 获取当前用户信息
- *
- * Day 6: Get user info
- * Day 6： 获取用户信息
- */
-export async function getCurrentUser(): Promise<UserInfo> {
-  const response = await api.get<UserInfo>('/auth/me')
-  return response.data
-}
-
-/**
- * Get all users (admin only)
- * 获取所有用户（仅管理员）
- *
- * Day 6: User list
- * Day 6： 用户列表
- */
-export async function getUsers(): Promise<UserListResponse> {
-  const response = await api.get<UserListResponse>('/auth/users')
-  return response.data
-}
-
-/**
- * Update user role (admin only)
- * 更新用户角色（仅管理员）
- *
- * Day 6: Role update
- * Day 6： 角色更新
- */
-export async function updateUserRole(userId: string, role: string): Promise<UserInfo> {
-  const response = await api.put<UserInfo>(`/auth/users/${userId}/role`, { role })
-  return response.data
-}
-
-/**
- * Deactivate a user (admin only)
- * 停用用户（仅管理员）
- *
- * Day 6: User deactivation
- * Day 6： 停用用户
- */
-export async function deactivateUser(userId: string): Promise<UserInfo> {
-  const response = await api.post<UserInfo>(`/auth/users/${userId}/deactivate`)
-  return response.data
-}
-
-// ==================== Permission API Functions (Day 6) ====================
-// ==================== 权限 API 函数（Day 6）====================
-
-/**
- * Grant permission to a user for a document
- * 授予用户对文档的权限
- *
- * Day 6: Permission grant
- * Day 6： 权限授予
- */
-export async function grantPermission(request: PermissionGrantRequest): Promise<PermissionInfo> {
-  const response = await api.post<PermissionInfo>('/permissions/grant', request)
-  return response.data
-}
-
-/**
- * Revoke permission from a user for a document
- * 撤销用户对文档的权限
- *
- * Day 6: Permission revoke
- * Day 6： 权限撤销
- */
-export async function revokePermission(documentId: string, userId: string): Promise<void> {
-  await api.delete(`/permissions/revoke/${documentId}/${userId}`)
-}
-
-/**
- * Get permissions for a document
- * 获取文档权限
- *
- * Day 6: Document permissions
- * Day 6： 文档权限
- */
-export async function getDocumentPermissions(documentId: string): Promise<PermissionInfo[]> {
-  const response = await api.get<{ permissions: PermissionInfo[] }>(`/permissions/document/${documentId}`)
-  return response.data.permissions
-}
-
-/**
- * Check if user has permission for a document
- * 检查用户对文档是否有权限
- *
- * Day 6: Permission check
- * Day 6： 权限检查
- */
-export async function checkPermission(
-  documentId: string,
-  permission: string
-): Promise<{ has_permission: boolean }> {
-  const response = await api.get(`/permissions/check/${documentId}`, {
-    params: { required_permission: permission }
+export async function getQAHistoryList(
+  page: number = 1,
+  pageSize: number = 20,
+  conversationId?: string
+): Promise<QAHistoryListResponse> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString(),
   })
-  return response.data
-}
-
-// ==================== Audit API Functions (Day 6) ====================
-// ==================== 审计 API 函数（Day 6）====================
-
-/**
- * Get audit logs (admin only)
- * 获取审计日志（仅管理员）
- *
- * Day 6: Audit logs query
- * Day 6： 审计日志查询
- */
-export async function getAuditLogs(params?: {
-  user_id?: string
-  action?: string
-  resource_type?: string
-  status?: string
-  limit?: number
-  offset?: number
-}): Promise<AuditLogListResponse> {
-  const response = await api.get<AuditLogListResponse>('/audit/logs', { params })
+  if (conversationId) {
+    params.append('conversation_id', conversationId)
+  }
+  const response = await api.get<QAHistoryListResponse>(`/qa-history?${params.toString()}`)
   return response.data
 }
 
 /**
- * Get system activity summary (admin only)
- * 获取系统活动摘要（仅管理员）
- *
- * Day 6: Activity summary
- * Day 6： 活动摘要
+ * Get single QA record by ID
+ * 根据 ID 获取单条问答记录
  */
-export async function getAuditSummary(days: number = 7): Promise<AuditSummaryResponse> {
-  const response = await api.get<AuditSummaryResponse>('/audit/summary', {
-    params: { days }
-  })
+export async function getQAHistoryRecord(recordId: string): Promise<QAHistoryRecord> {
+  const response = await api.get<QAHistoryRecord>(`/qa-history/${recordId}`)
   return response.data
 }
 
 /**
- * Get current user's activity
- * 获取当前用户的活动
- *
- * Day 6: User activity
- * Day 6： 用户活动
+ * Delete QA record
+ * 删除问答记录
  */
-export async function getMyActivity(days: number = 7): Promise<Record<string, unknown>> {
-  const response = await api.get('/audit/my-activity', {
-    params: { days }
-  })
+export async function deleteQAHistoryRecord(recordId: string): Promise<void> {
+  await api.delete(`/qa-history/${recordId}`)
+}
+
+/**
+ * Export QA history records
+ * 导出问答历史记录
+ */
+export async function exportQAHistory(request: QAHistoryExportRequest): Promise<{
+  records: QAHistoryRecord[]
+  count: number
+  export_format: string
+}> {
+  const response = await api.post('/qa-history/export', request)
   return response.data
 }
 
 /**
- * Export audit logs (admin only)
- * 导出审计日志（仅管理员）
- *
- * Day 6: Audit export
- * Day 6： 审计导出
+ * Get QA statistics
+ * 获取问答统计
  */
-export async function exportAuditLogs(format: string = 'json'): Promise<{ data: string }> {
-  const response = await api.get('/audit/export', {
-    params: { format }
-  })
+export async function getQAStats(): Promise<{
+  total_records: number
+  service_status: string
+}> {
+  const response = await api.get('/qa-history/stats/summary')
   return response.data
 }
 

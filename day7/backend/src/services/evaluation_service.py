@@ -23,7 +23,7 @@ from datetime import datetime
 import asyncio
 import logging
 
-# RAGAS imports
+# RAGAS imports (v0.4.x compatible)
 from ragas import evaluate
 from ragas.metrics import (
     faithfulness,
@@ -31,7 +31,10 @@ from ragas.metrics import (
     context_precision,
     context_recall,
 )
+from ragas.llms import LangchainLLMWrapper
+from ragas.embeddings import LangchainEmbeddingsWrapper
 from datasets import Dataset
+import pandas as pd
 
 # LangChain imports for evaluation
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -218,56 +221,90 @@ class EvaluationService:
         start_time = datetime.now()
 
         try:
-            # Prepare data for RAGAS
-            # 为 RAGAS 准备数据
+            # Prepare data for RAGAS v0.4.x (new column names)
+            # 为 RAGAS v0.4.x 准备数据（新列名）
             data = {
-                "question": [question],
-                "answer": [answer],
-                "contexts": [contexts],
+                "user_input": [question],
+                "response": [answer],
+                "retrieved_contexts": [contexts],
             }
 
-            # Add ground truth if available for context_recall
-            # 如果有真实答案则添加用于 context_recall
+            # Add reference (ground_truth) if available
+            # 如果有真实答案则添加 reference
             if ground_truth:
-                data["ground_truth"] = [ground_truth]
+                data["reference"] = [ground_truth]
 
             # Create dataset
             # 创建数据集
             dataset = Dataset.from_dict(data)
 
-            # Configure metrics to evaluate
-            # 配置要评估的指标
+            # Configure metrics based on available data
+            # 根据可用数据配置指标
+            # Set strictness=1 for compatibility with APIs that don't support n>1
+            # 设置 strictness=1 以兼容不支持 n>1 的 API（如通义千问）
+            answer_relevancy.strictness = 1
+
             metrics = [
                 faithfulness,
                 answer_relevancy,
-                context_precision,
             ]
 
-            # Add context_recall only if ground_truth is provided
-            # 只有在提供 ground_truth 时才添加 context_recall
+            # context_precision and context_recall require reference
+            # context_precision 和 context_recall 需要 reference
             if ground_truth:
-                metrics.append(context_recall)
+                metrics.extend([context_precision, context_recall])
 
             # Run evaluation
             # 运行评估
             llm = self._get_llm()
             embeddings = self._get_embeddings()
 
-            # RAGAS evaluate function
-            # RAGAS 评估函数
+            # Wrap LLM and embeddings for ragas v0.4.x
+            # 为 ragas v0.4.x 包装 LLM 和 embeddings
+            wrapped_llm = LangchainLLMWrapper(llm)
+            wrapped_embeddings = LangchainEmbeddingsWrapper(embeddings)
+
+            # RAGAS evaluate function (v0.4.x returns EvaluationResult)
+            # RAGAS 评估函数（v0.4.x 返回 EvaluationResult）
             result = evaluate(
                 dataset,
                 metrics=metrics,
-                llm=llm,
-                embeddings=embeddings,
+                llm=wrapped_llm,
+                embeddings=wrapped_embeddings,
             )
 
-            # Extract scores
-            # 提取分数
-            faithfulness_score = float(result.get("faithfulness", 0.0))
-            answer_relevance_score = float(result.get("answer_relevancy", 0.0))
-            context_precision_score = float(result.get("context_precision", 0.0))
-            context_recall_score = float(result.get("context_recall", 0.0)) if ground_truth else 0.0
+            # Extract scores from EvaluationResult (v0.4.x API)
+            # 从 EvaluationResult 提取分数（v0.4.x API）
+            df = result.to_pandas()
+            logger.info(f"RAGAS result columns: {df.columns.tolist() if df is not None else 'None'}")
+            logger.info(f"RAGAS result data: {df.to_dict() if df is not None else 'None'}")
+
+            if df is not None and len(df) > 0:
+                # Get first row scores (single evaluation)
+                # 获取第一行分数（单次评估）
+                row = df.iloc[0]
+
+                # Helper function to safely extract score (handle NaN)
+                # 辅助函数：安全提取分数（处理 NaN）
+                def get_score(row, col_name, default=0.0):
+                    val = row.get(col_name, default)
+                    if val is None or (isinstance(val, float) and pd.isna(val)):
+                        return default
+                    return float(val)
+
+                faithfulness_score = get_score(row, "faithfulness")
+                answer_relevance_score = get_score(row, "answer_relevancy")
+                context_precision_score = get_score(row, "context_precision")
+                context_recall_score = get_score(row, "context_recall") if ground_truth else 0.0
+
+                logger.info(f"Extracted scores - faithfulness: {faithfulness_score}, answer_relevancy: {answer_relevance_score}, context_precision: {context_precision_score}, context_recall: {context_recall_score}")
+            else:
+                # Fallback to zero scores
+                # 回退到零分
+                faithfulness_score = 0.0
+                answer_relevance_score = 0.0
+                context_precision_score = 0.0
+                context_recall_score = 0.0
 
             # Calculate overall score (weighted average)
             # 计算总体分数（加权平均）
@@ -303,7 +340,7 @@ class EvaluationService:
             )
 
         except Exception as e:
-            logger.error(f"Evaluation failed: {e}")
+            logger.error(f"Evaluation failed: {e}", exc_info=True)
             # 错误：评估失败
             end_time = datetime.now()
             evaluation_time_ms = (end_time - start_time).total_seconds() * 1000

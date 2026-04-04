@@ -10,20 +10,28 @@ Day 4： 添加了流式输出和上下文配置
 
 Day 5: Added evaluation and tracing configuration
 Day 5： 添加了评估和追踪配置
-
-Day 6: Added security and authentication configuration
-Day 6： 添加了安全和认证配置
 """
 
 import os
 import logging
 import sys
+from pathlib import Path
 from dotenv import load_dotenv
 from typing import Optional
 
 # Load environment variables from .env file
 # 从 .env 文件加载环境变量
-load_dotenv()
+# Try multiple locations to find .env file
+# 尝试多个位置查找 .env 文件
+env_paths = [
+    Path(__file__).parent.parent / ".env",  # backend/.env (when running from src/)
+    Path(__file__).parent / ".env",          # src/.env
+    Path.cwd() / ".env",                     # current working directory
+]
+for env_path in env_paths:
+    if env_path.exists():
+        load_dotenv(env_path)
+        break
 
 
 def setup_logging(
@@ -113,18 +121,6 @@ class Settings:
         self.evaluation_enabled: bool = os.getenv("EVALUATION_ENABLED", "true").lower() == "true"
         self.tracing_enabled: bool = os.getenv("TRACING_ENABLED", "true").lower() == "true"
         self.metrics_retention_days: int = int(os.getenv("METRICS_RETENTION_DAYS", "30"))
-
-        # Security Configuration (Day 6)
-        # 安全配置（Day 6）
-        self.jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
-        self.jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
-        self.jwt_expiration_hours: int = int(os.getenv("JWT_EXPIRATION_HOURS", "24"))
-        self.password_min_length: int = int(os.getenv("PASSWORD_MIN_LENGTH", "8"))
-        self.auth_enabled: bool = os.getenv("AUTH_ENABLED", "true").lower() == "true"
-        self.audit_enabled: bool = os.getenv("AUDIT_ENABLED", "true").lower() == "true"
-        self.content_filter_enabled: bool = os.getenv("CONTENT_FILTER_ENABLED", "true").lower() == "true"
-        self.audit_log_retention_days: int = int(os.getenv("AUDIT_LOG_RETENTION_DAYS", "90"))
-        self.max_login_attempts: int = int(os.getenv("MAX_LOGIN_ATTEMPTS", "5"))
 
 
 # Global settings instance
