@@ -33,6 +33,7 @@ from services.vector_store import vector_store
 from services.llm import llm_service
 from services.retrieval_service import retrieval_service, SearchResult
 from services.citation_service import citation_service
+from services.qa_history_service import qa_history_service
 from config import settings, get_logger
 
 # Get logger for this module
@@ -322,6 +323,18 @@ async def ask_question(request: ChatRequest):
         # 更新对话历史
         _update_conversation(conversation_id, request.question, answer, sources)
 
+        # Save QA history for evaluation
+        # 保存问答历史用于评估
+        await _save_qa_history(
+            question=request.question,
+            answer=answer,
+            context_chunks=context_chunks,
+            sources=sources,
+            retrieval_method=retrieval_method,
+            confidence=confidence,
+            conversation_id=conversation_id
+        )
+
         return ChatResponse(
             answer=answer,
             sources=sources,
@@ -495,6 +508,18 @@ async def stream_answer(request: ChatRequest):
             # 更新对话
             _update_conversation(conversation_id, request.question, full_answer, sources)
 
+            # Save QA history for evaluation
+            # 保存问答历史用于评估
+            await _save_qa_history(
+                question=request.question,
+                answer=full_answer,
+                context_chunks=context_chunks,
+                sources=sources,
+                retrieval_method=retrieval_method,
+                confidence=confidence,
+                conversation_id=conversation_id
+            )
+
         except Exception as e:
             # Log the error with full traceback
             # 记录错误和完整堆栈
@@ -631,3 +656,47 @@ def _is_context_based(answer: str) -> bool:
             return False
 
     return True
+
+
+async def _save_qa_history(
+    question: str,
+    answer: str,
+    context_chunks: List[str],
+    sources: List[SourceReference],
+    retrieval_method: str,
+    confidence: float,
+    conversation_id: str
+):
+    """
+    Save QA record to history for evaluation
+    保存问答记录到历史用于评估
+
+    Day 5: Helper function for QA history persistence
+    Day 5： 问答历史持久化的辅助函数
+    """
+    try:
+        # Extract source info for storage
+        # 提取来源信息用于存储
+        sources_data = [
+            {
+                "document_id": s.document_id,
+                "filename": s.filename,
+                "score": s.score,
+                "citation_id": s.citation_id
+            }
+            for s in sources
+        ]
+
+        await qa_history_service.add_record(
+            question=question,
+            answer=answer,
+            contexts=context_chunks,
+            sources=sources_data,
+            retrieval_method=retrieval_method,
+            confidence=confidence,
+            conversation_id=conversation_id
+        )
+    except Exception as e:
+        # Log but don't fail the request
+        # 记录但不要中断请求
+        logger.warning(f"Failed to save QA history: {e}")

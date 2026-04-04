@@ -477,3 +477,51 @@ class TraceInfoResponse(BaseModel):
     total_duration_ms: float = 0.0
     span_count: int = 0
     status: str = "OK"
+
+
+# ==================== QA History Models (Day 5) ====================
+# ==================== 问答历史模型（Day 5）====================
+
+class QAHistoryRecord(BaseModel):
+    """
+    A single QA history record
+    单条问答历史记录
+
+    Day 5: New model for QA history storage
+    Day 5： 问答历史存储的新模型
+    """
+    id: str
+    question: str
+    answer: str
+    contexts: List[str]
+    sources: Optional[List[Dict]] = None
+    retrieval_method: Optional[str] = None
+    confidence: float = 0.0
+    created_at: datetime
+    conversation_id: Optional[str] = None
+
+
+class QAHistoryListResponse(BaseModel):
+    """
+    Response containing list of QA history records
+    包含问答历史列表的响应
+
+    Day 5: New model for QA history list endpoint
+    Day 5： 问答历史列表端点的新模型
+    """
+    records: List[QAHistoryRecord]
+    total: int
+    page: int
+    page_size: int
+
+
+class QAHistoryExportRequest(BaseModel):
+    """
+    Request to export QA history records
+    导出问答历史记录的请求
+
+    Day 5: New model for QA history export
+    Day 5： 问答历史导出的新模型
+    """
+    record_ids: Optional[List[str]] = None
+    conversation_id: Optional[str] = None

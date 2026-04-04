@@ -209,6 +209,39 @@ export interface MetricExplanations {
   retrieval_metrics: Record<string, string>
 }
 
+// Day 5: QA History types
+// Day 5： 问答历史类型
+export interface QAHistorySource {
+  document_id: string
+  filename: string
+  score: number
+  citation_id: number
+}
+
+export interface QAHistoryRecord {
+  id: string
+  question: string
+  answer: string
+  contexts: string[]
+  sources?: QAHistorySource[]
+  retrieval_method?: string
+  confidence: number
+  created_at: string
+  conversation_id?: string
+}
+
+export interface QAHistoryListResponse {
+  records: QAHistoryRecord[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export interface QAHistoryExportRequest {
+  record_ids?: string[]
+  conversation_id?: string
+}
+
 // ==================== API Functions ====================
 // ==================== API 函数 ====================
 
@@ -419,6 +452,74 @@ export async function evaluationHealth(): Promise<{
   tracing_enabled: boolean
 }> {
   const response = await api.get('/evaluation/health')
+  return response.data
+}
+
+// ==================== QA History API Functions (Day 5) ====================
+// ==================== 问答历史 API 函数（Day 5）====================
+
+/**
+ * Get QA history list with pagination
+ * 获取问答历史列表（分页）
+ *
+ * Day 5: QA history for evaluation
+ * Day 5： 用于评估的问答历史
+ */
+export async function getQAHistoryList(
+  page: number = 1,
+  pageSize: number = 20,
+  conversationId?: string
+): Promise<QAHistoryListResponse> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString(),
+  })
+  if (conversationId) {
+    params.append('conversation_id', conversationId)
+  }
+  const response = await api.get<QAHistoryListResponse>(`/qa-history?${params.toString()}`)
+  return response.data
+}
+
+/**
+ * Get single QA record by ID
+ * 根据 ID 获取单条问答记录
+ */
+export async function getQAHistoryRecord(recordId: string): Promise<QAHistoryRecord> {
+  const response = await api.get<QAHistoryRecord>(`/qa-history/${recordId}`)
+  return response.data
+}
+
+/**
+ * Delete QA record
+ * 删除问答记录
+ */
+export async function deleteQAHistoryRecord(recordId: string): Promise<void> {
+  await api.delete(`/qa-history/${recordId}`)
+}
+
+/**
+ * Export QA history records
+ * 导出问答历史记录
+ */
+export async function exportQAHistory(request: QAHistoryExportRequest): Promise<{
+  records: QAHistoryRecord[]
+  count: number
+  export_format: string
+}> {
+  const response = await api.post('/qa-history/export', request)
+  return response.data
+}
+
+/**
+ * Get QA statistics
+ * 获取问答统计
+ */
+export async function getQAStats(): Promise<{
+  total_records: number
+  service_status: string
+}> {
+  const response = await api.get('/qa-history/stats/summary')
   return response.data
 }
 

@@ -590,3 +590,86 @@ df = result.to_pandas()
 - `day5/backend/pyproject.toml`
 - `day5/backend/src/config.py`
 - `day5/backend/src/services/evaluation_service.py`
+
+---
+
+### 2026-04-04: QA 历史功能与流式回答保存修复
+
+**问题描述 / Issue:**
+评估面板中无法看到问答历史记录。
+
+**根本原因 / Root Causes:**
+1. `client.ts` 中存在重复的类型定义（第 461-488 行与第 221-243 行重复）
+2. `stream_answer` 函数未调用 `_save_qa_history`，导致流式回答不会保存到历史
+
+**新增功能 / New Features:**
+
+QA 历史持久化存储，用于评估素材：
+
+```python
+# backend/src/services/qa_history_service.py (NEW)
+class QAHistoryService:
+    """QA 历史服务，用于持久化问答记录"""
+
+    async def connect()           # 连接数据库，创建表
+    async def add_record()        # 添加问答记录
+    async def get_record()        # 获取单条记录
+    async def list_records()      # 分页列出记录
+    async def delete_record()     # 删除记录
+    async def export_records()    # 导出记录用于评估
+```
+
+```python
+# backend/src/routers/qa_history.py (NEW)
+@router.get("")                   # 列出历史（分页）
+@router.get("/{record_id}")       # 获取单条记录
+@router.delete("/{record_id}")    # 删除记录
+@router.post("/export")           # 导出为 JSON
+@router.get("/stats/summary")     # 统计摘要
+```
+
+**修复内容 / Fixes:**
+
+```python
+# chat.py: stream_answer 添加历史保存
+# Update conversation
+_update_conversation(conversation_id, request.question, full_answer, sources)
+
+# Save QA history for evaluation (NEW)
+await _save_qa_history(
+    question=request.question,
+    answer=full_answer,
+    context_chunks=context_chunks,
+    sources=sources,
+    retrieval_method=retrieval_method,
+    confidence=confidence,
+    conversation_id=conversation_id
+)
+```
+
+```typescript
+// client.ts: 删除重复的类型定义
+// 保留第 212-243 行的定义，删除第 458-488 行的重复定义
+```
+
+**前端增强 / Frontend Enhancement:**
+
+```tsx
+// EvaluationPanel.tsx: 添加从历史选择功能
+const HistoryModal: React.FC = ({ isOpen, onClose, onSelect }) => {
+  // 从 QA 历史加载记录
+  const loadHistory = async () => {
+    const response = await getQAHistoryList(page, pageSize)
+    setRecords(response.records || [])
+  }
+  // 展示历史列表供用户选择
+}
+```
+
+**修改文件 / Modified Files:**
+- `day5/backend/src/services/qa_history_service.py` (NEW)
+- `day5/backend/src/routers/qa_history.py` (NEW)
+- `day5/backend/src/main.py` (注册路由和服务)
+- `day5/backend/src/routers/chat.py` (stream_answer 添加保存)
+- `day5/frontend/src/api/client.ts` (删除重复类型、添加 API)
+- `day5/frontend/src/components/EvaluationPanel.tsx` (添加历史选择)
