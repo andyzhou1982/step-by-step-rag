@@ -15,12 +15,23 @@ Day 5： 添加了评估和追踪配置
 import os
 import logging
 import sys
+from pathlib import Path
 from dotenv import load_dotenv
 from typing import Optional
 
 # Load environment variables from .env file
 # 从 .env 文件加载环境变量
-load_dotenv()
+# Try multiple locations to find .env file
+# 尝试多个位置查找 .env 文件
+env_paths = [
+    Path(__file__).parent.parent / ".env",  # backend/.env (when running from src/)
+    Path(__file__).parent / ".env",          # src/.env
+    Path.cwd() / ".env",                     # current working directory
+]
+for env_path in env_paths:
+    if env_path.exists():
+        load_dotenv(env_path)
+        break
 
 
 def setup_logging(

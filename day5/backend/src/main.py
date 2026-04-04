@@ -15,7 +15,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from routers import documents, chat
+from routers import documents, chat, evaluation
 from services.vector_store import vector_store
 from services.retrieval_service import retrieval_service
 from services.document_registry import document_registry
@@ -124,6 +124,7 @@ app.add_middleware(
 # 包含路由器
 app.include_router(documents.router)
 app.include_router(chat.router)
+app.include_router(evaluation.router)
 
 
 @app.get("/", response_model=dict)

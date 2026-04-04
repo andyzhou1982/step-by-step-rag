@@ -44,6 +44,14 @@ dependencies = [
     "numpy>=1.26.0",               # For similarity calculations / 相似度计算
     "sentence-transformers>=3.0.0", # For re-ranking / 重排序
     "jieba>=0.42.1",              # Chinese text segmentation / 中文分词
+
+    # Evaluation & Observability (Day 5)
+    # 评估与可观测性（Day 5）
+    "ragas>=0.1.0",               # RAG evaluation framework / RAG 评估框架
+    "datasets>=2.14.0",           # Hugging Face datasets / Hugging Face 数据集
+    "opentelemetry-api>=1.20.0",  # OpenTelemetry API / OpenTelemetry API
+    "opentelemetry-sdk>=1.20.0",  # OpenTelemetry SDK / OpenTelemetry SDK
+    "structlog>=23.0.0",          # Structured logging / 结构化日志
 ]
 
 [build-system]
