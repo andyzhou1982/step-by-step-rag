@@ -5,6 +5,29 @@
   WHEN: 每个阶段完成或有重要进展时更新
 -->
 
+## Session: 2026-04-04 (Day 5 评估功能修复)
+
+### Bug 修复阶段
+- **Status:** complete
+- **Started:** 2026-04-04
+- Actions taken:
+  - 修复 evaluation 路由未注册问题 (404 Not Found)
+  - 添加缺失依赖：ragas, datasets, opentelemetry-api, opentelemetry-sdk, structlog
+  - 修复 .env 文件加载路径问题
+  - 适配 ragas 0.4.x API 变更：
+    - 使用 LangchainLLMWrapper 和 LangchainEmbeddingsWrapper
+    - 设置 answer_relevancy.strictness=1 (兼容通义千问 API)
+    - 更新数据集列名 (user_input, response, retrieved_contexts, reference)
+    - 使用 result.to_pandas() 提取评估结果
+- Files modified:
+  - day5/backend/src/main.py (注册 evaluation 路由器)
+  - day5/backend/pyproject.toml (添加依赖)
+  - day5/backend/src/config.py (修复 .env 加载路径)
+  - day5/backend/src/services/evaluation_service.py (适配 ragas 0.4.x)
+  - day5/backend/uv.lock (锁定依赖版本)
+
+---
+
 ## Session: 2026-03-27~30 (Bug 修复)
 
 ### Bug 修复阶段

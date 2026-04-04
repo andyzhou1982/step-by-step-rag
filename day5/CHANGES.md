@@ -523,3 +523,70 @@ function App() {
 - [ ] 评估报告可视化图表
 - [ ] A/B 测试不同检索策略
 - [ ] 实时监控仪表板
+
+---
+
+## 8. Bug 修复记录 / Bug Fix Log
+
+### 2026-04-04: ragas 0.4.x 兼容性修复
+
+**问题描述 / Issue:**
+评估功能返回 404 或评估分数为 0/nan。
+
+**根本原因 / Root Causes:**
+1. `main.py` 中未注册 evaluation 路由器
+2. `pyproject.toml` 缺少 ragas, opentelemetry, structlog 依赖
+3. `config.py` 中 `load_dotenv()` 路径错误，导致环境变量未加载
+4. ragas 0.4.x API 变更：
+   - 列名变更：`question` → `user_input`, `answer` → `response`, `contexts` → `retrieved_contexts`, `ground_truth` → `reference`
+   - 需要使用 `LangchainLLMWrapper` 和 `LangchainEmbeddingsWrapper` 包装 LLM
+   - `answer_relevancy.strictness=3` 会生成 3 个问题（`n=3`），通义千问 API 不支持
+   - 返回 `EvaluationResult` 对象而非字典，需使用 `to_pandas()` 提取结果
+
+**修复内容 / Fixes:**
+
+```python
+# main.py: 注册 evaluation 路由器
+from routers import documents, chat, evaluation
+app.include_router(evaluation.router)
+
+# config.py: 多路径查找 .env 文件
+env_paths = [
+    Path(__file__).parent.parent / ".env",  # backend/.env
+    Path(__file__).parent / ".env",          # src/.env
+    Path.cwd() / ".env",                     # current directory
+]
+for env_path in env_paths:
+    if env_path.exists():
+        load_dotenv(env_path)
+        break
+
+# evaluation_service.py: 适配 ragas 0.4.x
+from ragas.llms import LangchainLLMWrapper
+from ragas.embeddings import LangchainEmbeddingsWrapper
+
+# 设置 strictness=1 兼容通义千问 API
+answer_relevancy.strictness = 1
+
+# 使用新的列名
+data = {
+    "user_input": [question],
+    "response": [answer],
+    "retrieved_contexts": [contexts],
+}
+if ground_truth:
+    data["reference"] = [ground_truth]
+
+# 包装 LLM 和 embeddings
+wrapped_llm = LangchainLLMWrapper(llm)
+wrapped_embeddings = LangchainEmbeddingsWrapper(embeddings)
+
+# 使用 to_pandas() 提取结果
+df = result.to_pandas()
+```
+
+**修改文件 / Modified Files:**
+- `day5/backend/src/main.py`
+- `day5/backend/pyproject.toml`
+- `day5/backend/src/config.py`
+- `day5/backend/src/services/evaluation_service.py`
