@@ -590,6 +590,7 @@ df = result.to_pandas()
 - `day5/backend/pyproject.toml`
 - `day5/backend/src/config.py`
 - `day5/backend/src/services/evaluation_service.py`
+- `day5/frontend/src/components/EvaluationPanel.tsx`
 
 ---
 
