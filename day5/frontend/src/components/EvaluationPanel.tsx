@@ -192,6 +192,7 @@ const EvaluationPanel: React.FC<EvaluationPanelProps> = ({
   const [question, setQuestion] = useState(initialQuestion)
   const [answer, setAnswer] = useState(initialAnswer)
   const [contexts, setContexts] = useState<string[]>(initialContexts)
+  const [groundTruth, setGroundTruth] = useState('')
   const [ragMetrics, setRagMetrics] = useState<EvaluationMetrics | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -245,6 +246,7 @@ const EvaluationPanel: React.FC<EvaluationPanelProps> = ({
         question,
         answer,
         contexts,
+        ground_truth: groundTruth.trim() || undefined,
       })
       setRagMetrics(response.rag_metrics)
       setEvalTime(response.evaluation_time_ms)
@@ -314,6 +316,23 @@ const EvaluationPanel: React.FC<EvaluationPanelProps> = ({
         <p className="text-xs text-gray-400 mt-1">
           {contexts.length} context chunks / 上下文分块
         </p>
+      </div>
+
+      {/* Ground Truth Input / 标准答案输入 */}
+      <div className="mb-4 p-3 bg-yellow-50 rounded border border-yellow-200">
+        <label className="block text-sm font-medium text-yellow-700 mb-1">
+          📝 Ground Truth (Optional) / 标准答案（可选）
+        </label>
+        <p className="text-xs text-yellow-600 mb-2">
+          提供 ground truth 可提高评估准确性
+        </p>
+        <textarea
+          value={groundTruth}
+          onChange={(e) => setGroundTruth(e.target.value)}
+          placeholder="Enter the reference answer for evaluation / 输入标准答案用于评估..."
+          className="w-full px-3 py-2 border border-yellow-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+          rows={3}
+        />
       </div>
 
       {/* Loading state / 加载状态 */}
