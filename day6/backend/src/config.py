@@ -10,6 +10,9 @@ Day 4： 添加了流式输出和上下文配置
 
 Day 5: Added evaluation and tracing configuration
 Day 5： 添加了评估和追踪配置
+
+Day 6: Added security and authentication configuration
+Day 6： 添加了安全和认证配置
 """
 
 import os
@@ -121,6 +124,16 @@ class Settings:
         self.evaluation_enabled: bool = os.getenv("EVALUATION_ENABLED", "true").lower() == "true"
         self.tracing_enabled: bool = os.getenv("TRACING_ENABLED", "true").lower() == "true"
         self.metrics_retention_days: int = int(os.getenv("METRICS_RETENTION_DAYS", "30"))
+
+        # Security & Authentication Configuration (Day 6)
+        # 安全与认证配置（Day 6）
+        self.auth_enabled: bool = os.getenv("AUTH_ENABLED", "true").lower() == "true"
+        self.jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+        self.jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
+        self.jwt_expiration_hours: int = int(os.getenv("JWT_EXPIRATION_HOURS", "24"))
+        self.password_min_length: int = int(os.getenv("PASSWORD_MIN_LENGTH", "8"))
+        self.content_filter_enabled: bool = os.getenv("CONTENT_FILTER_ENABLED", "true").lower() == "true"
+        self.audit_log_retention_days: int = int(os.getenv("AUDIT_LOG_RETENTION_DAYS", "90"))
 
 
 # Global settings instance

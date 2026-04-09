@@ -10,6 +10,12 @@ Day 4： 添加了流式输出和上下文配置
 
 Day 5: Added evaluation and tracing configuration
 Day 5： 添加了评估和追踪配置
+
+Day 6: Added security and authentication configuration
+Day 6： 添加了安全和认证配置
+
+Day 7: Added production and performance configuration
+Day 7： 添加了生产和性能配置
 """
 
 import os
@@ -121,6 +127,29 @@ class Settings:
         self.evaluation_enabled: bool = os.getenv("EVALUATION_ENABLED", "true").lower() == "true"
         self.tracing_enabled: bool = os.getenv("TRACING_ENABLED", "true").lower() == "true"
         self.metrics_retention_days: int = int(os.getenv("METRICS_RETENTION_DAYS", "30"))
+
+        # Security & Authentication Configuration (Day 6)
+        # 安全与认证配置（Day 6）
+        self.auth_enabled: bool = os.getenv("AUTH_ENABLED", "true").lower() == "true"
+        self.jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+        self.jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
+        self.jwt_expiration_hours: int = int(os.getenv("JWT_EXPIRATION_HOURS", "24"))
+        self.password_min_length: int = int(os.getenv("PASSWORD_MIN_LENGTH", "8"))
+        self.content_filter_enabled: bool = os.getenv("CONTENT_FILTER_ENABLED", "true").lower() == "true"
+        self.audit_log_retention_days: int = int(os.getenv("AUDIT_LOG_RETENTION_DAYS", "90"))
+
+        # Production & Performance Configuration (Day 7)
+        # 生产与性能配置（Day 7）
+        self.cache_enabled: bool = os.getenv("CACHE_ENABLED", "true").lower() == "true"
+        self.cache_ttl_seconds: int = int(os.getenv("CACHE_TTL_SECONDS", "300"))
+        self.cache_max_size: int = int(os.getenv("CACHE_MAX_SIZE", "1000"))
+        self.use_redis: bool = os.getenv("USE_REDIS", "false").lower() == "true"
+        self.redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        self.retry_max_attempts: int = int(os.getenv("RETRY_MAX_ATTEMPTS", "3"))
+        self.retry_backoff_factor: float = float(os.getenv("RETRY_BACKOFF_FACTOR", "1.0"))
+        self.retry_max_wait_seconds: float = float(os.getenv("RETRY_MAX_WAIT_SECONDS", "10.0"))
+        self.metrics_enabled: bool = os.getenv("METRICS_ENABLED", "true").lower() == "true"
+        self.request_timeout_seconds: int = int(os.getenv("REQUEST_TIMEOUT_SECONDS", "30"))
 
 
 # Global settings instance

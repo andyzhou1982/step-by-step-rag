@@ -1,7 +1,7 @@
 [project]
 name = "step-by-step-rag"
-version = "3.0.0"
-description = "Step-by-Step RAG Tutorial - Day 3"
+version = "7.0.0"
+description = "Step-by-Step RAG Tutorial - Day 7"
 requires-python = ">=3.11"
 
 # Web Framework
@@ -46,6 +46,18 @@ dependencies = [
     "opentelemetry-api>=1.20.0",  # OpenTelemetry API / OpenTelemetry API
     "opentelemetry-sdk>=1.20.0",  # OpenTelemetry SDK / OpenTelemetry SDK
     "structlog>=23.0.0",          # Structured logging / 结构化日志
+    # Security & Authentication (Day 6)
+    # 安全与认证（Day 6）
+    "passlib>=1.7.4",              # Password hashing / 密码哈希
+    "bcrypt<4.0.0",                # bcrypt 3.x for passlib compatibility / passlib 兼容的 bcrypt 3.x
+    "python-jose[cryptography]>=3.3.0",  # JWT tokens / JWT tokens
+    "email-validator>=2.1.0",      # Email validation / 邮箱验证
+    # Production & Performance (Day 7)
+    # 生产与性能（Day 7）
+    "cachetools>=5.3.0",          # In-memory caching / 内存缓存
+    "redis>=5.0.0",               # Redis caching (optional) / Redis 缓存（可选）
+    "tenacity>=8.2.0",            # Retry logic / 重试逻辑
+    "prometheus-client>=0.19.0",  # Metrics / 指标
 ]
 
 [build-system]

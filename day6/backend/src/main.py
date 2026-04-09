@@ -7,6 +7,9 @@ Day 2： 增强了多格式文档支持
 
 Day 3: Added hybrid retrieval with BM25 indexing
 Day 3： 添加了带 BM25 索引的混合检索
+
+Day 6: Security & Governance - Authentication, Authorization, Audit
+Day 6： 安全与治理 - 认证、授权、审计
 """
 
 import traceback
@@ -16,10 +19,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from routers import documents, chat, evaluation, qa_history
+from routers import auth, permissions, audit
 from services.vector_store import vector_store
 from services.retrieval_service import retrieval_service
 from services.document_registry import document_registry
 from services.qa_history_service import qa_history_service
+from services.audit_service import audit_service
 from models.schemas import HealthResponse
 from config import settings, setup_logging, get_logger
 
@@ -71,13 +76,23 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Step-by-Step RAG API",
     description="""
-## Day 3: Hybrid Retrieval & Re-ranking
-## Day 3: 混合检索与重排序
+## Day 6: Security & Governance
+## Day 6: 安全与治理
 
-A RAG (Retrieval-Augmented Generation) system with advanced retrieval strategies.
-一个具有高级检索策略的 RAG（检索增强生成）系统。
+A RAG (Retrieval-Augmented Generation) system with security and governance features.
+一个具有安全与治理功能的 RAG（检索增强生成）系统。
 
-### Day 3 Features / Day 3 功能:
+### Day 6 Features / Day 6 功能:
+- **Authentication**: JWT-based user authentication
+- **认证**: 基于 JWT 的用户认证
+- **Authorization**: Role-based access control (admin, user, viewer)
+- **授权**: 基于角色的访问控制（admin, user, viewer）
+- **Audit Logging**: Complete audit trail of all actions
+- **审计日志**: 所有操作的完整审计追踪
+- **Content Filtering**: SQL injection, XSS, prompt injection protection
+- **内容过滤**: SQL 注入、XSS、提示注入防护
+
+### Day 3 Features (Inherited) / Day 3 功能（继承）:
 - **Hybrid search**: Vector + BM25 keyword search
 - **混合检索**: 向量 + BM25 关键词搜索
 - **Query rewriting**: Optional LLM-based query optimization
@@ -101,14 +116,28 @@ A RAG (Retrieval-Augmented Generation) system with advanced retrieval strategies
 - `.html` - HTML web pages / HTML 网页
 
 ### API Endpoints / API 端点:
+#### Authentication / 认证:
+- `POST /auth/register` - Register new user / 注册新用户
+- `POST /auth/login` - Login and get token / 登录获取 token
+- `POST /auth/logout` - Logout / 登出
+- `GET /auth/me` - Get current user info / 获取当前用户信息
+- `GET /auth/users` - List all users (admin) / 列出所有用户（管理员）
+- `PUT /auth/users/{id}/role` - Update user role (admin) / 更新用户角色（管理员）
+
+#### Documents / 文档:
 - `POST /documents/upload` - Upload document / 上传文档
 - `GET /documents/list` - List documents / 列出文档
-- `GET /documents/formats` - Supported formats / 支持的格式
 - `DELETE /documents/{id}` - Delete document / 删除文档
+
+#### Chat / 聊天:
 - `POST /chat/ask` - Ask question / 提问
 - `GET /chat/retrieval-config` - Get retrieval config / 获取检索配置
+
+#### Audit / 审计:
+- `GET /audit/logs` - Get audit logs (admin) / 获取审计日志（管理员）
+- `GET /audit/summary` - Get audit summary (admin) / 获取审计摘要（管理员）
 """,
-    version="3.0.0",
+    version="6.0.0",
     lifespan=lifespan
 )
 
@@ -129,6 +158,9 @@ app.include_router(documents.router)
 app.include_router(chat.router)
 app.include_router(evaluation.router)
 app.include_router(qa_history.router)
+app.include_router(auth.router)
+app.include_router(permissions.router)
+app.include_router(audit.router)
 
 
 @app.get("/", response_model=dict)
@@ -138,18 +170,26 @@ async def root():
     返回 API 信息的根端点
     """
     return {
-        "message": "Welcome to Step-by-Step RAG API - Day 3",
-        "欢迎": "欢迎使用 Step-by-Step RAG API - Day 3",
-        "version": "3.0.0",
-        "day": 3,
+        "message": "Welcome to Step-by-Step RAG API - Day 6",
+        "欢迎": "欢迎使用 Step-by-Step RAG API - Day 6",
+        "version": "6.0.0",
+        "day": 6,
         "features": [
+            "authentication",
+            "authorization",
+            "audit-logging",
+            "content-filtering",
             "hybrid-search",
             "bm25",
             "query-rewrite",
             "rerank",
             "multi-format",
             "metadata",
-            "smart-chunking"
+            "smart-chunking",
+            "streaming",
+            "citations",
+            "evaluation",
+            "tracing"
         ],
         "docs": "/docs"
     }
@@ -169,12 +209,19 @@ async def health_check():
     # Day 3： 检查 BM25 索引状态
     bm25_indexed = retrieval_service._bm25_index._index is not None
 
+    # Day 6: Get audit log count
+    # Day 6： 获取审计日志计数
+    audit_log_count = len(audit_service._logs)
+
     return HealthResponse(
         status="healthy",
         database=db_status,
-        version="3.0.0",
-        day=3,
-        bm25_indexed=bm25_indexed
+        version="6.0.0",
+        day=6,
+        bm25_indexed=bm25_indexed,
+        streaming_enabled=True,
+        evaluation_enabled=True,
+        tracing_enabled=True
     )
 
 

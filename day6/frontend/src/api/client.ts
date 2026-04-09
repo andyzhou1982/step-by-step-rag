@@ -523,4 +523,264 @@ export async function getQAStats(): Promise<{
   return response.data
 }
 
+// ==================== Authentication Types (Day 6) ====================
+// ==================== 认证类型（Day 6）====================
+
+export interface UserInfo {
+  id: string
+  username: string
+  email: string
+  role: 'admin' | 'user' | 'viewer'
+  is_active: boolean
+  created_at?: string
+  last_login?: string
+}
+
+export interface UserLoginRequest {
+  username: string
+  password: string
+}
+
+export interface UserRegisterRequest {
+  username: string
+  email: string
+  password: string
+  role?: 'admin' | 'user' | 'viewer'
+}
+
+export interface TokenResponse {
+  access_token: string
+  token_type: string
+  expires_in: number
+  user_id: string
+  username: string
+  role: string
+}
+
+// ==================== User Management Types (Day 6) ====================
+// ==================== 用户管理类型（Day 6）====================
+
+export interface UserListResponse {
+  users: UserInfo[]
+  total: number
+}
+
+export interface UserRoleUpdateRequest {
+  role: 'admin' | 'user' | 'viewer'
+}
+
+// ==================== Audit Log Types (Day 6) ====================
+// ==================== 审计日志类型（Day 6）====================
+
+export type AuditActionType =
+  | 'login'
+  | 'logout'
+  | 'login_failed'
+  | 'user_create'
+  | 'user_update'
+  | 'user_deactivate'
+  | 'user_activate'
+  | 'document_upload'
+  | 'document_delete'
+  | 'document_view'
+  | 'document_download'
+  | 'chat_query'
+  | 'chat_stream'
+  | 'permission_grant'
+  | 'permission_revoke'
+  | 'system_config_change'
+  | 'system_error'
+
+export interface AuditLogEntry {
+  id: string
+  timestamp: string
+  action: AuditActionType
+  user_id: string
+  username: string
+  resource_type?: string
+  resource_id?: string
+  details?: Record<string, unknown>
+  ip_address?: string
+  user_agent?: string
+  status: string // "success", "failed", "error"
+  error_message?: string
+}
+
+export interface AuditLogListResponse {
+  logs: AuditLogEntry[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface AuditSummaryResponse {
+  period_days: number
+  total_actions: number
+  unique_users: number
+  action_counts: Record<string, number>
+  resource_counts: Record<string, number>
+}
+
+// ==================== Authentication API Functions (Day 6) ====================
+// ==================== 认证 API 函数（Day 6）====================
+
+/**
+ * Login and get JWT token
+ * 登录并获取 JWT token
+ *
+ * Day 6: New endpoint for user login
+ * Day 6： 用户登录的新端点
+ */
+export async function login(req: UserLoginRequest): Promise<TokenResponse> {
+  const response = await api.post<TokenResponse>('/auth/login', req)
+  return response.data
+}
+
+/**
+ * Register a new user
+ * 注册新用户
+ *
+ * Day 6: New endpoint for user registration
+ * Day 6： 用户注册的新端点
+ */
+export async function register(req: UserRegisterRequest): Promise<TokenResponse> {
+  const response = await api.post<TokenResponse>('/auth/register', req)
+  return response.data
+}
+
+/**
+ * Logout current user
+ * 登出当前用户
+ *
+ * Day 6: New endpoint for user logout
+ * Day 6： 用户登出的新端点
+ */
+export async function logout(): Promise<{ message: string }> {
+  const response = await api.post<{ message: string }>('/auth/logout')
+  return response.data
+}
+
+/**
+ * Get current user information
+ * 获取当前用户信息
+ *
+ * Day 6: New endpoint for user info
+ * Day 6： 用户信息的新端点
+ */
+export async function getCurrentUser(): Promise<UserInfo> {
+  const response = await api.get<UserInfo>('/auth/me')
+  return response.data
+}
+
+// ==================== User Management API Functions (Day 6) ====================
+// ==================== 用户管理 API 函数（Day 6）====================
+
+/**
+ * Get list of all users (admin only)
+ * 获取所有用户列表（仅管理员）
+ *
+ * Day 6: New endpoint for user list
+ * Day 6： 用户列表的新端点
+ */
+export async function getUsers(): Promise<UserListResponse> {
+  const response = await api.get<UserListResponse>('/auth/users')
+  return response.data
+}
+
+/**
+ * Update a user's role (admin only)
+ * 更新用户角色（仅管理员）
+ *
+ * Day 6: New endpoint for role update
+ * Day 6： 角色更新的新端点
+ */
+export async function updateUserRole(
+  userId: string,
+  req: UserRoleUpdateRequest
+): Promise<UserInfo> {
+  const response = await api.put<UserInfo>(`/auth/users/${userId}/role`, req)
+  return response.data
+}
+
+/**
+ * Deactivate a user (admin only)
+ * 停用用户（仅管理员）
+ *
+ * Day 6: New endpoint for user deactivation
+ * Day 6： 停用用户的新端点
+ */
+export async function deactivateUser(userId: string): Promise<UserInfo> {
+  const response = await api.post<UserInfo>(`/auth/users/${userId}/deactivate`)
+  return response.data
+}
+
+/**
+ * Activate a user (admin only)
+ * 激活用户（仅管理员）
+ *
+ * Day 6: New endpoint for user activation
+ * Day 6： 激活用户的新端点
+ */
+export async function activateUser(userId: string): Promise<UserInfo> {
+  const response = await api.post<UserInfo>(`/auth/users/${userId}/activate`)
+  return response.data
+}
+
+// ==================== Audit Log API Functions (Day 6) ====================
+// ==================== 审计日志 API 函数（Day 6）====================
+
+/**
+ * Get audit log list with pagination and filters
+ * 获取审计日志列表（分页和过滤）
+ *
+ * Day 6: New endpoint for audit logs
+ * Day 6： 审计日志的新端点
+ */
+export async function getAuditLogs(
+  options?: {
+    limit?: number
+    offset?: number
+    user_id?: string
+    action?: string
+    resource_type?: string
+    resource_id?: string
+    status?: string
+    start_date?: string
+    end_date?: string
+  }
+): Promise<AuditLogListResponse> {
+  const params: Record<string, string> = {}
+  if (options?.limit) params.limit = options.limit.toString()
+  if (options?.offset) params.offset = options.offset.toString()
+  if (options?.user_id) params.user_id = options.user_id
+  if (options?.action) params.action = options.action
+  if (options?.resource_type) params.resource_type = options.resource_type
+  if (options?.resource_id) params.resource_id = options.resource_id
+  if (options?.status) params.status = options.status
+  if (options?.start_date) params.start_date = options.start_date
+  if (options?.end_date) params.end_date = options.end_date
+
+  const queryString = new URLSearchParams(params).toString()
+  const response = await api.get<AuditLogListResponse>(
+    `/audit/logs${queryString ? `?${queryString}` : ''}`
+  )
+  return response.data
+}
+
+/**
+ * Get audit summary statistics
+ * 获取审计摘要统计
+ *
+ * Day 6: New endpoint for audit summary
+ * Day 6： 审计摘要的新端点
+ */
+export async function getAuditSummary(
+  days: number = 7
+): Promise<AuditSummaryResponse> {
+  const response = await api.get<AuditSummaryResponse>(
+    `/audit/summary?days=${days}`
+  )
+  return response.data
+}
+
 export default api

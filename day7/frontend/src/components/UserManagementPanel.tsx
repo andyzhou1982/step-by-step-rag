@@ -47,7 +47,7 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ currentUser }
     setSuccess('')
 
     try {
-      await updateUserRole(userId, newRole)
+      await updateUserRole(userId, { role: newRole as 'admin' | 'user' | 'viewer' })
       setSuccess(`User role updated to ${newRole}`)
       // 用户角色已更新为 ${newRole}
       await loadUsers()

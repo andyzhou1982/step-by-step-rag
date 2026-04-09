@@ -525,3 +525,226 @@ class QAHistoryExportRequest(BaseModel):
     """
     record_ids: Optional[List[str]] = None
     conversation_id: Optional[str] = None
+
+
+# ==================== Authentication Models (Day 6) ====================
+# ==================== 认证模型（Day 6）====================
+
+class UserLoginRequest(BaseModel):
+    """
+    User login request
+    用户登录请求
+
+    Day 6: New model for user login
+    Day 6： 用户登录的新模型
+    """
+    username: str
+    password: str
+
+
+class UserRegisterRequest(BaseModel):
+    """
+    User registration request
+    用户注册请求
+
+    Day 6: New model for user registration
+    Day 6： 用户注册的新模型
+    """
+    username: str
+    email: str
+    password: str
+    role: str = "user"  # "admin", "user", "viewer"
+
+
+class TokenResponse(BaseModel):
+    """
+    JWT token response
+    JWT token 响应
+
+    Day 6: New model for token response
+    Day 6： token 响应的新模型
+    """
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user_id: str
+    username: str
+    role: str
+
+
+class UserInfo(BaseModel):
+    """
+    User information response
+    用户信息响应
+
+    Day 6: New model for user info
+    Day 6： 用户信息的新模型
+    """
+    id: str
+    username: str
+    email: str
+    role: str  # "admin", "user", "viewer"
+    is_active: bool
+    created_at: Optional[datetime] = None
+    last_login: Optional[datetime] = None
+
+
+class UserListResponse(BaseModel):
+    """
+    List of users response
+    用户列表响应
+
+    Day 6: New model for user list
+    Day 6： 用户列表的新模型
+    """
+    users: List[UserInfo]
+    total: int
+
+
+class UserRoleUpdateRequest(BaseModel):
+    """
+    Request to update user role
+    更新用户角色的请求
+
+    Day 6: New model for role update
+    Day 6： 角色更新的新模型
+    """
+    role: str  # "admin", "user", "viewer"
+
+
+# ==================== Audit Log Models (Day 6) ====================
+# ==================== 审计日志模型（Day 6）====================
+
+class AuditLogEntry(BaseModel):
+    """
+    Audit log entry
+    审计日志条目
+
+    Day 6: New model for audit logs
+    Day 6： 审计日志的新模型
+    """
+    id: str
+    timestamp: datetime
+    action: str  # Action type from AuditAction enum
+    user_id: str
+    username: str
+    resource_type: Optional[str] = None
+    resource_id: Optional[str] = None
+    details: Optional[Dict] = None
+    status: str = "success"  # "success", "failed", "error"
+
+
+class AuditLogListResponse(BaseModel):
+    """
+    Response containing list of audit logs
+    包含审计日志列表的响应
+
+    Day 6: New model for audit log list
+    Day 6： 审计日志列表的新模型
+    """
+    logs: List[AuditLogEntry]
+    total: int
+    limit: int
+    offset: int
+
+
+class AuditSummaryResponse(BaseModel):
+    """
+    Audit summary statistics
+    审计摘要统计
+
+    Day 6: New model for audit summary
+    Day 6： 审计摘要的新模型
+    """
+    period_days: int
+    total_actions: int
+    unique_users: int
+    action_counts: Dict[str, int]
+    resource_counts: Dict[str, int]
+
+
+# ==================== Permission Models (Day 6) ====================
+# ==================== 权限模型（Day 6）====================
+
+class PermissionGrantRequest(BaseModel):
+    """
+    Request to grant permission
+    授予权限的请求
+
+    Day 6: New model for permission grants
+    Day 6： 权限授予的新模型
+    """
+    user_id: str
+    resource_type: str  # "document", "chat", "system"
+    resource_id: str
+    permission: str  # "read", "write", "admin"
+
+
+class Permission(BaseModel):
+    """
+    Permission object
+    权限对象
+
+    Day 6: New model for permission
+    Day 6： 权限的新模型
+    """
+    id: str
+    user_id: str
+    resource_type: str
+    resource_id: str
+    permission: str
+    granted_by: str
+    created_at: datetime
+
+
+class PermissionListResponse(BaseModel):
+    """
+    List of permissions response
+    权限列表响应
+
+    Day 6: New model for permission list
+    Day 6： 权限列表的新模型
+    """
+    permissions: List[Permission]
+    total: int
+
+
+class UserPermissionsResponse(BaseModel):
+    """
+    User permissions response
+    用户权限响应
+
+    Day 6: New model for user permissions
+    Day 6： 用户权限的新模型
+    """
+    user_id: str
+    permissions: List[Permission]
+    role: str
+
+
+class PermissionInfo(BaseModel):
+    """
+    Permission information for a resource
+    资源权限信息
+
+    Day 6: New model for permission info
+    Day 6： 权限信息的新模型
+    """
+    user_id: str
+    username: str
+    permission: str  # "read", "write", "admin"
+    granted_at: datetime
+
+
+class DocumentPermissionsResponse(BaseModel):
+    """
+    Document permissions response
+    文档权限响应
+
+    Day 6: New model for document permissions
+    Day 6： 文档权限的新模型
+    """
+    document_id: str
+    document_name: str
+    permissions: List[PermissionInfo]
+    public_access: bool = False

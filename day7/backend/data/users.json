@@ -1,0 +1,14 @@
+{
+  "users": [
+    {
+      "id": "ddc10549-eb27-4e76-9420-38d075e3c1bf",
+      "username": "admin",
+      "email": "admin@example.com",
+      "hashed_password": "$2b$12$Cuffk6I0Nbl9i1hqN8GdseU1oj4.QKutnchTdy5qAiH3D5YKLdnKO",
+      "role": "admin",
+      "is_active": true,
+      "created_at": "2026-04-09T06:40:24.628831",
+      "last_login": "2026-04-10T06:01:25.191058"
+    }
+  ]
+}

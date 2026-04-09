@@ -1,0 +1,89 @@
+{
+  "logs": [
+    {
+      "id": "079383e6-b548-4832-96a7-1ab66e9eae15",
+      "timestamp": "2026-04-09T06:46:47.411139",
+      "action": "login",
+      "user_id": "ddc10549-eb27-4e76-9420-38d075e3c1bf",
+      "username": "admin",
+      "resource_type": "user",
+      "resource_id": "ddc10549-eb27-4e76-9420-38d075e3c1bf",
+      "details": {},
+      "ip_address": "127.0.0.1",
+      "user_agent": "test",
+      "status": "success",
+      "error_message": null
+    },
+    {
+      "id": "71c26a73-6630-4280-a819-857eae4d7619",
+      "timestamp": "2026-04-09T06:49:26.107415",
+      "action": "login",
+      "user_id": "ddc10549-eb27-4e76-9420-38d075e3c1bf",
+      "username": "admin",
+      "resource_type": "user",
+      "resource_id": "ddc10549-eb27-4e76-9420-38d075e3c1bf",
+      "details": {},
+      "ip_address": "testclient",
+      "user_agent": "testclient",
+      "status": "success",
+      "error_message": null
+    },
+    {
+      "id": "2c3be855-b6f1-49fd-a51b-12353a5c18d7",
+      "timestamp": "2026-04-09T06:52:11.013478",
+      "action": "login",
+      "user_id": "ddc10549-eb27-4e76-9420-38d075e3c1bf",
+      "username": "admin",
+      "resource_type": "user",
+      "resource_id": "ddc10549-eb27-4e76-9420-38d075e3c1bf",
+      "details": {},
+      "ip_address": "testclient",
+      "user_agent": "testclient",
+      "status": "success",
+      "error_message": null
+    },
+    {
+      "id": "82466073-fc5a-43e8-9688-4f3f5e4bad4c",
+      "timestamp": "2026-04-09T06:54:47.268087",
+      "action": "login",
+      "user_id": "test-id",
+      "username": "testuser",
+      "resource_type": "user",
+      "resource_id": "test-id",
+      "details": {},
+      "ip_address": "127.0.0.1",
+      "user_agent": "test-agent",
+      "status": "success",
+      "error_message": null
+    },
+    {
+      "id": "b14ace71-d65b-40f3-a442-5868e1b3fd6c",
+      "timestamp": "2026-04-10T05:59:20.860814",
+      "action": "login_failed",
+      "user_id": "unknown",
+      "username": "admin",
+      "resource_type": "user",
+      "resource_id": "unknown",
+      "details": {},
+      "ip_address": "127.0.0.1",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "status": "failed",
+      "error_message": "Invalid credentials"
+    },
+    {
+      "id": "6ccfd325-ab86-452d-92c6-e19753bd58c7",
+      "timestamp": "2026-04-10T06:01:47.599227",
+      "action": "login",
+      "user_id": "ddc10549-eb27-4e76-9420-38d075e3c1bf",
+      "username": "admin",
+      "resource_type": "user",
+      "resource_id": "ddc10549-eb27-4e76-9420-38d075e3c1bf",
+      "details": {},
+      "ip_address": "127.0.0.1",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "status": "success",
+      "error_message": null
+    }
+  ],
+  "last_updated": "2026-04-10T06:01:47.599227"
+}

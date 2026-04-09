@@ -16,7 +16,6 @@ from models.schemas import (
     ApiResponse,
 )
 from services.auth_service import auth_service, User
-from services.auth_service import auth_service
 from services.permission_service import permission_service, Permission
 from services.audit_service import audit_service, AuditAction
 from routers.auth import get_current_user, require_role, get_client_ip

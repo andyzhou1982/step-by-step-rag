@@ -42,7 +42,7 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLoginSuccess }) => {
         id: response.user_id,
         username: response.username,
         email: '',
-        role: response.role,
+        role: response.role as 'admin' | 'user' | 'viewer',
         is_active: true,
       }
       localStorage.setItem('user_info', JSON.stringify(user))
@@ -102,7 +102,7 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLoginSuccess }) => {
         id: response.user_id,
         username: response.username,
         email,
-        role: response.role,
+        role: response.role as 'admin' | 'user' | 'viewer',
         is_active: true,
       }
       localStorage.setItem('user_info', JSON.stringify(user))
