@@ -21,6 +21,7 @@ dependencies = [
     # 数据库
     "asyncpg>=0.31.0",
     "pgvector>=0.3.6",
+    "sqlalchemy[asyncio]>=2.0.0",
     # Utilities
     # 工具
     "python-dotenv>=1.2.2",

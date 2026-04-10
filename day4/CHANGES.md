@@ -583,7 +583,26 @@ const renderAnswerWithCitations = (content: string, sources?: SourceReference[])
 
 ---
 
-## 6. 后续改进 / Future Improvements (Day 5+)
+## 6. 数据库迁移增强 / Database Migration Enhancement (Post-Release Update)
+
+### 概述 / Overview
+
+Day 4 已完成从原始 SQL 到 SQLAlchemy ORM 的迁移，与 Day 6+ 统一数据库存储方式。
+
+### 新增文件 / New Files
+
+- `backend/src/models/database.py` - ORM 模型定义（DocumentRegistry）
+- `backend/src/services/database_service.py` - 统一数据库连接和会话管理
+
+### 修改文件 / Modified Files
+
+- `backend/src/services/document_registry.py` - 原始 SQL → SQLAlchemy ORM
+- `backend/src/main.py` - 添加 db_service 初始化
+- `backend/pyproject.toml` - 添加 `sqlalchemy[asyncio]>=2.0.0`
+
+---
+
+## 7. 后续改进 / Future Improvements (Day 5+)
 
 - [ ] 真正的引用提取（LLM 输出解析）
 - [ ] 流式 token 计数和显示

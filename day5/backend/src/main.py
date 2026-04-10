@@ -21,6 +21,7 @@ from services.vector_store import vector_store
 from services.retrieval_service import retrieval_service
 from services.document_registry import document_registry
 from services.qa_history_service import qa_history_service
+from services.database_service import db_service
 from models.schemas import HealthResponse
 from config import settings, setup_logging, get_logger
 
@@ -38,6 +39,8 @@ async def lifespan(app: FastAPI):
     # Startup: Connect to databases
     # 启动: 连接数据库
     logger.info("Starting up... Connecting to databases.")
+    await db_service.connect()
+    await db_service.create_tables()
     await vector_store.connect()
     await document_registry.connect()
     await qa_history_service.connect()
@@ -64,6 +67,7 @@ async def lifespan(app: FastAPI):
     await vector_store.disconnect()
     await document_registry.disconnect()
     await qa_history_service.disconnect()
+    await db_service.disconnect()
     logger.info("Databases disconnected.")
 
 

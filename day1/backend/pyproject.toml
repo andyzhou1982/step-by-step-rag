@@ -5,6 +5,7 @@ description = "Step-by-Step RAG Tutorial - Day 1"
 requires-python = ">=3.11"
 dependencies = [
     "asyncpg>=0.31.0",
+    "sqlalchemy[asyncio]>=2.0.0",
     "fastapi>=0.135.1",
     "langchain>=1.2.13",
     "langchain-community>=0.4.1",

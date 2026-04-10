@@ -334,7 +334,26 @@ async def root():
 
 ---
 
-## 6. 后续改进 / Future Improvements (Day 3+)
+## 6. 数据库迁移增强 / Database Migration Enhancement (Post-Release Update)
+
+### 概述 / Overview
+
+Day 2 已完成从原始 SQL 到 SQLAlchemy ORM 的迁移，与 Day 6+ 统一数据库存储方式。
+
+### 新增文件 / New Files
+
+- `backend/src/models/database.py` - ORM 模型定义（DocumentRegistry: id=String(255), filename, chunk_count, created_at, file_type, file_size, title）
+- `backend/src/services/database_service.py` - 统一数据库连接和会话管理（create_async_engine + async_sessionmaker）
+
+### 修改文件 / Modified Files
+
+- `backend/src/services/document_registry.py` - 原始 SQL → SQLAlchemy ORM，不再自管 `_async_engine`
+- `backend/src/main.py` - 添加 db_service.connect()、create_tables()、disconnect()
+- `backend/pyproject.toml` - 添加 `sqlalchemy[asyncio]>=2.0.0`
+
+---
+
+## 7. 后续改进 / Future Improvements (Day 3+)
 
 - [ ] OCR 支持用于图片 PDF
 - [ ] 表格提取

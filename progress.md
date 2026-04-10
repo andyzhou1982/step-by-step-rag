@@ -5,6 +5,38 @@
   WHEN: 每个阶段完成或有重要进展时更新
 -->
 
+## Session: 2026-04-11 (Day 1-5 数据库迁移到 SQLAlchemy ORM)
+
+### 数据库迁移重构
+- **Status:** complete
+- **Started:** 2026-04-11
+- 需求: 将 Day 6 的 SQLAlchemy ORM 统一数据库存储方式应用到 Day 1-5
+- Actions taken:
+  - **Day 1:**
+    - 新增 `models/database.py`（DocumentRegistry: id=String(255), filename, chunk_count, created_at）
+    - 新增 `services/database_service.py`
+    - 重写 `services/document_registry.py` 使用 ORM
+    - 更新 `main.py` 添加 db_service 初始化
+    - 更新 `pyproject.toml` 添加 sqlalchemy
+  - **Day 2-4（共享代码）:**
+    - 新增 `models/database.py`（DocumentRegistry 含 file_type, file_size, title）
+    - 新增 `services/database_service.py`
+    - 重写 `services/document_registry.py` 使用 ORM
+    - 更各天 `main.py` 和 `pyproject.toml`
+  - **Day 5:**
+    - 同 Day 2-4，额外新增 QAHistory 模型（confidence=Float）
+    - 重写 `services/qa_history_service.py` 使用 ORM
+  - **设计决策:**
+    - 保持 VARCHAR(255) 主键（不改为 UUID）
+    - QAHistory confidence 保持 Float（不改为 Integer）
+    - rag_documents 表不动（仍由 LangChain PGVector 管理）
+    - vector_store.py 的 BM25 方法不动（直接查 rag_documents 表）
+- Files created: day1-day5 models/database.py, services/database_service.py
+- Files modified: day1-day5 services/document_registry.py, main.py, pyproject.toml; day5 services/qa_history_service.py
+- Docs updated: day2-day5 CHANGES.md, progress.md
+
+---
+
 ## Session: 2026-04-11 (Day 6/Day 7 数据库迁移到 SQLAlchemy ORM)
 
 ### 数据库迁移重构
