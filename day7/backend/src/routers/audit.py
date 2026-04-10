@@ -55,7 +55,7 @@ async def get_audit_logs(
                 detail=f"Invalid action type: {action}"
             )
 
-    logs = audit_service.get_logs(
+    logs = await audit_service.get_logs(
         user_id=user_id,
         action=action_enum,
         resource_type=resource_type,
@@ -69,7 +69,7 @@ async def get_audit_logs(
 
     # Get total count (approximate - using same filters)
     # 获取总数（近似 - 使用相同的过滤器）
-    total_logs = audit_service.get_logs(
+    total_logs = await audit_service.get_logs(
         user_id=user_id,
         action=action_enum,
         resource_type=resource_type,
@@ -115,7 +115,7 @@ async def get_user_activity(
     Day 6: New endpoint for user activity
     Day 6： 用户活动的新端点
     """
-    summary = audit_service.get_user_activity_summary(user_id, days)
+    summary = await audit_service.get_user_activity_summary(user_id, days)
     return summary
 
 
@@ -131,7 +131,7 @@ async def get_system_activity_summary(
     Day 6: New endpoint for system activity summary
     Day 6： 系统活动摘要的新端点
     """
-    summary = audit_service.get_system_activity_summary(days)
+    summary = await audit_service.get_system_activity_summary(days)
 
     return AuditSummaryResponse(
         period_days=summary["period_days"],
@@ -178,7 +178,7 @@ async def export_audit_logs(
             detail="Invalid format. Must be 'json' or 'csv'"
         )
 
-    exported_data = audit_service.export_logs(
+    exported_data = await audit_service.export_logs(
         format=format,
         start_date=start_date,
         end_date=end_date,

@@ -1,7 +1,7 @@
 [project]
 name = "step-by-step-rag"
-version = "7.0.0"
-description = "Step-by-Step RAG Tutorial - Day 7"
+version = "3.0.0"
+description = "Step-by-Step RAG Tutorial - Day 3"
 requires-python = ">=3.11"
 
 # Web Framework
@@ -21,6 +21,7 @@ dependencies = [
     # 数据库
     "asyncpg>=0.31.0",
     "pgvector>=0.3.6",
+    "sqlalchemy[asyncio]>=2.0.0",  # Unified ORM / 统一 ORM
     # Utilities
     # 工具
     "python-dotenv>=1.2.2",
@@ -52,12 +53,6 @@ dependencies = [
     "bcrypt<4.0.0",                # bcrypt 3.x for passlib compatibility / passlib 兼容的 bcrypt 3.x
     "python-jose[cryptography]>=3.3.0",  # JWT tokens / JWT tokens
     "email-validator>=2.1.0",      # Email validation / 邮箱验证
-    # Production & Performance (Day 7)
-    # 生产与性能（Day 7）
-    "cachetools>=5.3.0",          # In-memory caching / 内存缓存
-    "redis>=5.0.0",               # Redis caching (optional) / Redis 缓存（可选）
-    "tenacity>=8.2.0",            # Retry logic / 重试逻辑
-    "prometheus-client>=0.19.0",  # Metrics / 指标
 ]
 
 [build-system]
@@ -67,8 +62,4 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
-# Use Tsinghua mirror for faster downloads
-# 使用清华镜像源加速下载
-[[tool.uv.index]]
-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
-default = true
+

@@ -4,18 +4,24 @@ Audit logging service for tracking user actions
 
 Day 6: Security & Governance
 Day 6： 安全与治理
+
+Day 6 Enhancement: Uses PostgreSQL instead of JSON files
+Day 6 增强： 使用 PostgreSQL 替代 JSON 文件
 """
 
-import os
-import json
 import traceback
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from enum import Enum
 import uuid
 
+from sqlalchemy import select, and_, delete, func
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from config import settings, get_logger
+from models.database import AuditLog as AuditLogModel
+from services.database_service import db_service
 
 logger = get_logger(__name__)
 
@@ -66,6 +72,9 @@ class AuditLog:
 
     Day 6: New model for audit log
     Day 6： 审计日志的新模型
+
+    Day 6 Enhancement: Now backed by PostgreSQL database
+    Day 6 增强： 现在由 PostgreSQL 数据库支持
     """
     id: str
     timestamp: datetime
@@ -81,8 +90,7 @@ class AuditLog:
     error_message: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary
-        转换为字典"""
+        """Convert to dictionary / 转换为字典"""
         return {
             "id": self.id,
             "timestamp": self.timestamp.isoformat(),
@@ -97,6 +105,24 @@ class AuditLog:
             "status": self.status,
             "error_message": self.error_message,
         }
+
+    @classmethod
+    def from_db_model(cls, db_log: AuditLogModel) -> "AuditLog":
+        """Create AuditLog from database model / 从数据库模型创建审计日志"""
+        return cls(
+            id=str(db_log.id),
+            timestamp=db_log.timestamp,
+            action=AuditAction(db_log.action),
+            user_id=str(db_log.user_id),
+            username=db_log.username,
+            resource_type=db_log.resource_type,
+            resource_id=str(db_log.resource_id) if db_log.resource_id else None,
+            details=db_log.details or {},
+            ip_address=db_log.ip_address,
+            user_agent=db_log.user_agent,
+            status=db_log.status,
+            error_message=db_log.error_message,
+        )
 
 
 class AuditService:
@@ -114,66 +140,7 @@ class AuditService:
     - Export audit logs
     """
 
-    def __init__(self):
-        # In-memory log storage (for demo)
-        # 内存日志存储（用于演示）
-        # In production, use database or log aggregation system
-        # 生产环境中，使用数据库或日志聚合系统
-        self._logs: List[AuditLog] = []
-        self._logs_file = os.path.join(os.path.dirname(__file__), "..", "..", "data", "audit_logs.json")
-        self._load_logs()
-
-    def _load_logs(self):
-        """Load logs from file
-        从文件加载日志"""
-        try:
-            if os.path.exists(self._logs_file):
-                with open(self._logs_file, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    for log_data in data.get("logs", []):
-                        log = AuditLog(
-                            id=log_data["id"],
-                            timestamp=datetime.fromisoformat(log_data["timestamp"]),
-                            action=AuditAction(log_data["action"]),
-                            user_id=log_data["user_id"],
-                            username=log_data["username"],
-                            resource_type=log_data["resource_type"],
-                            resource_id=log_data.get("resource_id"),
-                            details=log_data.get("details", {}),
-                            ip_address=log_data.get("ip_address"),
-                            user_agent=log_data.get("user_agent"),
-                            status=log_data.get("status", "success"),
-                            error_message=log_data.get("error_message"),
-                        )
-                        self._logs.append(log)
-        except Exception as e:
-            logger.error(f"Error loading audit logs: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
-            self._logs = []
-
-    def _save_logs(self):
-        """Save logs to file
-        保存日志到文件"""
-        try:
-            os.makedirs(os.path.dirname(self._logs_file), exist_ok=True)
-
-            # Clean up old logs based on retention policy
-            # 根据保留策略清理旧日志
-            cutoff_date = datetime.now() - timedelta(days=settings.audit_log_retention_days)
-            self._logs = [log for log in self._logs if log.timestamp >= cutoff_date]
-
-            data = {
-                "logs": [log.to_dict() for log in self._logs],
-                "last_updated": datetime.now().isoformat(),
-            }
-
-            with open(self._logs_file, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            logger.error(f"Error saving audit logs: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
-
-    def log_action(
+    async def log_action(
         self,
         action: AuditAction,
         user_id: str,
@@ -215,27 +182,45 @@ class AuditService:
             Created AuditLog entry
             创建的 AuditLog 条目
         """
-        log = AuditLog(
-            id=str(uuid.uuid4()),
-            timestamp=datetime.now(),
-            action=action,
-            user_id=user_id,
-            username=username,
-            resource_type=resource_type,
-            resource_id=resource_id,
-            details=details or {},
-            ip_address=ip_address,
-            user_agent=user_agent,
-            status=status,
-            error_message=error_message,
-        )
+        async with db_service.session_factory() as session:
+            # Parse resource_id as UUID if provided
+            # 如果提供了 resource_id，解析为 UUID
+            resource_id_uuid = None
+            if resource_id:
+                try:
+                    resource_id_uuid = uuid.UUID(resource_id)
+                except ValueError:
+                    pass
 
-        self._logs.append(log)
-        self._save_logs()
+            # Parse user_id as UUID
+            # 解析 user_id 为 UUID
+            try:
+                user_id_uuid = uuid.UUID(user_id)
+            except ValueError:
+                user_id_uuid = uuid.uuid4()  # Fallback for invalid IDs
 
-        return log
+            db_log = AuditLogModel(
+                id=uuid.uuid4(),
+                timestamp=datetime.utcnow(),
+                action=action.value,
+                user_id=user_id_uuid,
+                username=username,
+                resource_type=resource_type,
+                resource_id=resource_id_uuid,
+                details=details or {},
+                ip_address=ip_address,
+                user_agent=user_agent,
+                status=status,
+                error_message=error_message,
+            )
 
-    def log_login(
+            session.add(db_log)
+            await session.commit()
+            await session.refresh(db_log)
+
+            return AuditLog.from_db_model(db_log)
+
+    async def log_login(
         self,
         user_id: str,
         username: str,
@@ -262,7 +247,7 @@ class AuditService:
             Created AuditLog entry
             创建的 AuditLog 条目
         """
-        return self.log_action(
+        return await self.log_action(
             action=AuditAction.LOGIN if success else AuditAction.LOGIN_FAILED,
             user_id=user_id,
             username=username,
@@ -274,7 +259,7 @@ class AuditService:
             error_message=None if success else "Invalid credentials",
         )
 
-    def log_logout(
+    async def log_logout(
         self,
         user_id: str,
         username: str,
@@ -295,7 +280,7 @@ class AuditService:
             Created AuditLog entry
             创建的 AuditLog 条目
         """
-        return self.log_action(
+        return await self.log_action(
             action=AuditAction.LOGOUT,
             user_id=user_id,
             username=username,
@@ -304,7 +289,7 @@ class AuditService:
             ip_address=ip_address,
         )
 
-    def log_document_action(
+    async def log_document_action(
         self,
         action: AuditAction,
         user_id: str,
@@ -340,7 +325,7 @@ class AuditService:
             Created AuditLog entry
             创建的 AuditLog 条目
         """
-        return self.log_action(
+        return await self.log_action(
             action=action,
             user_id=user_id,
             username=username,
@@ -352,7 +337,7 @@ class AuditService:
             error_message=error_message,
         )
 
-    def log_chat_action(
+    async def log_chat_action(
         self,
         action: AuditAction,
         user_id: str,
@@ -382,7 +367,7 @@ class AuditService:
             Created AuditLog entry
             创建的 AuditLog 条目
         """
-        return self.log_action(
+        return await self.log_action(
             action=action,
             user_id=user_id,
             username=username,
@@ -392,7 +377,7 @@ class AuditService:
             ip_address=ip_address,
         )
 
-    def get_logs(
+    async def get_logs(
         self,
         user_id: Optional[str] = None,
         action: Optional[AuditAction] = None,
@@ -431,34 +416,77 @@ class AuditService:
             List of matching AuditLog entries
             匹配的 AuditLog 条目列表
         """
-        filtered = self._logs
+        async with db_service.session_factory() as session:
+            query = select(AuditLogModel)
 
-        # Apply filters
-        # 应用过滤器
-        if user_id:
-            filtered = [log for log in filtered if log.user_id == user_id]
-        if action:
-            filtered = [log for log in filtered if log.action == action]
-        if resource_type:
-            filtered = [log for log in filtered if log.resource_type == resource_type]
-        if resource_id:
-            filtered = [log for log in filtered if log.resource_id == resource_id]
-        if start_date:
-            filtered = [log for log in filtered if log.timestamp >= start_date]
-        if end_date:
-            filtered = [log for log in filtered if log.timestamp <= end_date]
-        if status:
-            filtered = [log for log in filtered if log.status == status]
+            # Apply filters
+            # 应用过滤器
+            conditions = []
 
-        # Sort by timestamp (newest first)
-        # 按时间戳排序（最新的在前）
-        filtered.sort(key=lambda x: x.timestamp, reverse=True)
+            if user_id:
+                try:
+                    user_id_uuid = uuid.UUID(user_id)
+                    conditions.append(AuditLogModel.user_id == user_id_uuid)
+                except ValueError:
+                    pass
 
-        # Apply pagination
-        # 应用分页
-        return filtered[offset:offset + limit]
+            if action:
+                conditions.append(AuditLogModel.action == action.value)
 
-    def get_user_activity_summary(
+            if resource_type:
+                conditions.append(AuditLogModel.resource_type == resource_type)
+
+            if resource_id:
+                try:
+                    resource_id_uuid = uuid.UUID(resource_id)
+                    conditions.append(AuditLogModel.resource_id == resource_id_uuid)
+                except ValueError:
+                    pass
+
+            if start_date:
+                conditions.append(AuditLogModel.timestamp >= start_date)
+
+            if end_date:
+                conditions.append(AuditLogModel.timestamp <= end_date)
+
+            if status:
+                conditions.append(AuditLogModel.status == status)
+
+            if conditions:
+                query = query.where(and_(*conditions))
+
+            # Order by timestamp (newest first)
+            # 按时间戳排序（最新的在前）
+            query = query.order_by(AuditLogModel.timestamp.desc())
+
+            # Apply pagination
+            # 应用分页
+            query = query.limit(limit).offset(offset)
+
+            result = await session.execute(query)
+            db_logs = result.scalars().all()
+
+            return [AuditLog.from_db_model(log) for log in db_logs]
+
+    async def cleanup_old_logs(self):
+        """
+        Clean up old logs based on retention policy
+        根据保留策略清理旧日志
+
+        Day 6 Enhancement: Database-based cleanup instead of file-based
+        Day 6 增强： 基于数据库的清理而不是基于文件
+        """
+        cutoff_date = datetime.utcnow() - timedelta(days=settings.audit_log_retention_days)
+
+        async with db_service.session_factory() as session:
+            await session.execute(
+                delete(AuditLogModel).where(AuditLogModel.timestamp < cutoff_date)
+            )
+            await session.commit()
+
+        logger.info(f"Cleaned up audit logs older than {settings.audit_log_retention_days} days")
+
+    async def get_user_activity_summary(
         self,
         user_id: str,
         days: int = 7
@@ -476,8 +504,8 @@ class AuditService:
             Activity summary dictionary
             活动摘要字典
         """
-        start_date = datetime.now() - timedelta(days=days)
-        user_logs = self.get_logs(user_id=user_id, start_date=start_date)
+        start_date = datetime.utcnow() - timedelta(days=days)
+        user_logs = await self.get_logs(user_id=user_id, start_date=start_date, limit=10000)
 
         # Count actions by type
         # 按类型统计操作
@@ -494,7 +522,7 @@ class AuditService:
             "last_activity": user_logs[0].timestamp.isoformat() if user_logs else None,
         }
 
-    def get_system_activity_summary(
+    async def get_system_activity_summary(
         self,
         days: int = 7
     ) -> Dict[str, Any]:
@@ -509,8 +537,8 @@ class AuditService:
             System activity summary dictionary
             系统活动摘要字典
         """
-        start_date = datetime.now() - timedelta(days=days)
-        all_logs = self.get_logs(start_date=start_date, limit=10000)
+        start_date = datetime.utcnow() - timedelta(days=days)
+        all_logs = await self.get_logs(start_date=start_date, limit=10000)
 
         # Count actions by type
         # 按类型统计操作
@@ -540,7 +568,7 @@ class AuditService:
             "resource_counts": resource_counts,
         }
 
-    def export_logs(
+    async def export_logs(
         self,
         format: str = "json",
         start_date: Optional[datetime] = None,
@@ -561,7 +589,9 @@ class AuditService:
             Exported data as string
             导出的数据字符串
         """
-        logs = self.get_logs(start_date=start_date, end_date=end_date, limit=10000)
+        import json
+
+        logs = await self.get_logs(start_date=start_date, end_date=end_date, limit=10000)
 
         if format == "json":
             return json.dumps([log.to_dict() for log in logs], indent=2)

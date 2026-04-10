@@ -4,19 +4,25 @@ Authentication service for user management and JWT token handling
 
 Day 6: Security & Governance
 Day 6： 安全与治理
+
+Day 6 Enhancement: Uses PostgreSQL instead of JSON files
+Day 6 增强： 使用 PostgreSQL 替代 JSON 文件
 """
 
-import os
-import json
 import traceback
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 import uuid
 
+from sqlalchemy import select, and_
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from config import settings, get_logger
+from models.database import AppUser
+from services.database_service import db_service
 
 logger = get_logger(__name__)
 
@@ -34,6 +40,9 @@ class User:
 
     Day 6: New model for user management
     Day 6： 用户管理的新模型
+
+    Day 6 Enhancement: Now backed by PostgreSQL database
+    Day 6 增强： 现在由 PostgreSQL 数据库支持
     """
     id: str
     username: str
@@ -56,6 +65,20 @@ class User:
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "last_login": self.last_login.isoformat() if self.last_login else None,
         }
+
+    @classmethod
+    def from_db_model(cls, db_user: AppUser) -> "User":
+        """Create User from database model / 从数据库模型创建用户"""
+        return cls(
+            id=str(db_user.id),
+            username=db_user.username,
+            email=db_user.email,
+            hashed_password=db_user.hashed_password,
+            role=db_user.role,
+            is_active=db_user.is_active,
+            created_at=db_user.created_at,
+            last_login=db_user.last_login,
+        )
 
 
 @dataclass
@@ -85,95 +108,15 @@ class AuthService:
     - User registration and login
     - JWT token generation and validation
     - Password hashing and verification
-    - In-memory user storage (for demo, replace with database in production)
+    - PostgreSQL database storage
     """
 
     def __init__(self):
-        # In-memory user storage (for demo purposes)
-        # 内存用户存储（用于演示目的）
-        # In production, replace with database storage
-        # 生产环境中，替换为数据库存储
-        self._users: Dict[str, User] = {}
-        self._users_file = os.path.join(os.path.dirname(__file__), "..", "..", "data", "users.json")
-        self._load_users()
+        # No initialization needed - database is managed by db_service
+        # 不需要初始化 - 数据库由 db_service 管理
+        pass
 
-        # Create default admin user if no users exist
-        # 如果没有用户则创建默认管理员
-        if not self._users:
-            self._create_default_admin()
-
-    def _load_users(self):
-        """Load users from file
-        从文件加载用户"""
-        try:
-            if os.path.exists(self._users_file):
-                with open(self._users_file, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    for user_data in data.get("users", []):
-                        user = User(
-                            id=user_data["id"],
-                            username=user_data["username"],
-                            email=user_data["email"],
-                            hashed_password=user_data["hashed_password"],
-                            role=user_data.get("role", "user"),
-                            is_active=user_data.get("is_active", True),
-                            created_at=datetime.fromisoformat(user_data["created_at"]) if user_data.get("created_at") else datetime.now(),
-                            last_login=datetime.fromisoformat(user_data["last_login"]) if user_data.get("last_login") else None,
-                        )
-                        self._users[user.id] = user
-        except Exception as e:
-            logger.error(f"Error loading users: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
-            # Initialize with empty dict if loading fails
-            # 如果加载失败则初始化为空字典
-            self._users = {}
-
-    def _save_users(self):
-        """Save users to file
-        保存用户到文件"""
-        try:
-            # Create data directory if not exists
-            # 如果数据目录不存在则创建
-            os.makedirs(os.path.dirname(self._users_file), exist_ok=True)
-
-            data = {
-                "users": [
-                    {
-                        "id": user.id,
-                        "username": user.username,
-                        "email": user.email,
-                        "hashed_password": user.hashed_password,
-                        "role": user.role,
-                        "is_active": user.is_active,
-                        "created_at": user.created_at.isoformat() if user.created_at else None,
-                        "last_login": user.last_login.isoformat() if user.last_login else None,
-                    }
-                    for user in self._users.values()
-                ]
-            }
-
-            with open(self._users_file, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            logger.error(f"Error saving users: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
-
-    def _create_default_admin(self):
-        """Create default admin user
-        创建默认管理员用户"""
-        admin_user = User(
-            id=str(uuid.uuid4()),
-            username="admin",
-            email="admin@example.com",
-            hashed_password=self.hash_password("admin123"),
-            role="admin",
-            is_active=True,
-        )
-        self._users[admin_user.id] = admin_user
-        self._save_users()
-        logger.info("Created default admin user: admin / admin123")
-
-    def hash_password(self, password: str) -> str:
+    async def hash_password(self, password: str) -> str:
         """
         Hash a password using bcrypt
         使用 bcrypt 哈希密码
@@ -187,7 +130,7 @@ class AuthService:
         """
         return pwd_context.hash(password)
 
-    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+    async def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """
         Verify a password against a hash
         验证密码与哈希是否匹配
@@ -203,7 +146,7 @@ class AuthService:
         """
         return pwd_context.verify(plain_password, hashed_password)
 
-    def create_access_token(self, user: User) -> str:
+    async def create_access_token(self, user: User) -> str:
         """
         Create a JWT access token for a user
         为用户创建 JWT 访问 token
@@ -233,7 +176,7 @@ class AuthService:
 
         return token
 
-    def decode_token(self, token: str) -> Optional[TokenData]:
+    async def decode_token(self, token: str) -> Optional[TokenData]:
         """
         Decode and validate a JWT token
         解码并验证 JWT token
@@ -261,7 +204,7 @@ class AuthService:
         except JWTError:
             return None
 
-    def register_user(
+    async def register_user(
         self,
         username: str,
         email: str,
@@ -288,36 +231,59 @@ class AuthService:
             ValueError: If username or email already exists
                        如果用户名或邮箱已存在
         """
-        # Check if username exists
-        # 检查用户名是否存在
-        for user in self._users.values():
-            if user.username == username:
-                raise ValueError(f"Username '{username}' already exists")
-            if user.email == email:
-                raise ValueError(f"Email '{email}' already exists")
+        async with db_service.session_factory() as session:
+            # Check if username exists
+            # 检查用户名是否存在
+            result = await session.execute(
+                select(AppUser).where(
+                    and_(
+                        AppUser.username == username,
+                        AppUser.email == email
+                    )
+                )
+            )
+            existing = result.first()
 
-        # Validate password length
-        # 验证密码长度
-        if len(password) < settings.password_min_length:
-            raise ValueError(f"Password must be at least {settings.password_min_length} characters")
+            if existing:
+                # Check which field conflicts
+                # 检查哪个字段冲突
+                result = await session.execute(
+                    select(AppUser).where(AppUser.username == username)
+                )
+                if result.first():
+                    raise ValueError(f"Username '{username}' already exists")
 
-        # Create new user
-        # 创建新用户
-        new_user = User(
-            id=str(uuid.uuid4()),
-            username=username,
-            email=email,
-            hashed_password=self.hash_password(password),
-            role=role,
-            is_active=True,
-        )
+                result = await session.execute(
+                    select(AppUser).where(AppUser.email == email)
+                )
+                if result.first():
+                    raise ValueError(f"Email '{email}' already exists")
 
-        self._users[new_user.id] = new_user
-        self._save_users()
+            # Validate password length
+            # 验证密码长度
+            if len(password) < settings.password_min_length:
+                raise ValueError(f"Password must be at least {settings.password_min_length} characters")
 
-        return new_user
+            # Create new user
+            # 创建新用户
+            hashed_password = await self.hash_password(password)
+            new_user = AppUser(
+                id=uuid.uuid4(),
+                username=username,
+                email=email,
+                hashed_password=hashed_password,
+                role=role,
+                is_active=True,
+            )
 
-    def authenticate_user(self, username: str, password: str) -> Optional[User]:
+            session.add(new_user)
+            await session.commit()
+            await session.refresh(new_user)
+
+            logger.info(f"New user registered: {username}")
+            return User.from_db_model(new_user)
+
+    async def authenticate_user(self, username: str, password: str) -> Optional[User]:
         """
         Authenticate a user by username and password
         通过用户名和密码验证用户
@@ -331,35 +297,34 @@ class AuthService:
             User if authentication successful, None otherwise
             如果验证成功返回 User，否则返回 None
         """
-        # Find user by username
-        # 通过用户名查找用户
-        user = None
-        for u in self._users.values():
-            if u.username == username:
-                user = u
-                break
+        async with db_service.session_factory() as session:
+            # Find user by username
+            # 通过用户名查找用户
+            result = await session.execute(
+                select(AppUser).where(AppUser.username == username)
+            )
+            db_user = result.scalar_one_or_none()
 
-        if not user:
-            return None
+            if not db_user:
+                return None
 
-        # Check if user is active
-        # 检查用户是否活跃
-        if not user.is_active:
-            return None
+            if not db_user.is_active:
+                return None
 
-        # Verify password
-        # 验证密码
-        if not self.verify_password(password, user.hashed_password):
-            return None
+            # Verify password
+            # 验证密码
+            if not await self.verify_password(password, db_user.hashed_password):
+                return None
 
-        # Update last login time
-        # 更新最后登录时间
-        user.last_login = datetime.now()
-        self._save_users()
+            # Update last login time
+            # 更新最后登录时间
+            db_user.last_login = datetime.utcnow()
+            await session.commit()
+            await session.refresh(db_user)
 
-        return user
+            return User.from_db_model(db_user)
 
-    def get_user_by_id(self, user_id: str) -> Optional[User]:
+    async def get_user_by_id(self, user_id: str) -> Optional[User]:
         """
         Get a user by ID
         通过 ID 获取用户
@@ -371,9 +336,21 @@ class AuthService:
             User if found, None otherwise
             如果找到返回 User，否则返回 None
         """
-        return self._users.get(user_id)
+        try:
+            user_uuid = uuid.UUID(user_id)
+        except ValueError:
+            return None
 
-    def get_user_by_username(self, username: str) -> Optional[User]:
+        async with db_service.session_factory() as session:
+            result = await session.execute(
+                select(AppUser).where(AppUser.id == user_uuid)
+            )
+            db_user = result.scalar_one_or_none()
+            if db_user:
+                return User.from_db_model(db_user)
+            return None
+
+    async def get_user_by_username(self, username: str) -> Optional[User]:
         """
         Get a user by username
         通过用户名获取用户
@@ -385,12 +362,16 @@ class AuthService:
             User if found, None otherwise
             如果找到返回 User，否则返回 None
         """
-        for user in self._users.values():
-            if user.username == username:
-                return user
-        return None
+        async with db_service.session_factory() as session:
+            result = await session.execute(
+                select(AppUser).where(AppUser.username == username)
+            )
+            db_user = result.scalar_one_or_none()
+            if db_user:
+                return User.from_db_model(db_user)
+            return None
 
-    def get_all_users(self) -> list[User]:
+    async def get_all_users(self) -> list[User]:
         """
         Get all users
         获取所有用户
@@ -399,9 +380,12 @@ class AuthService:
             List of all users
             所有用户的列表
         """
-        return list(self._users.values())
+        async with db_service.session_factory() as session:
+            result = await session.execute(select(AppUser))
+            db_users = result.scalars().all()
+            return [User.from_db_model(u) for u in db_users]
 
-    def update_user_role(self, user_id: str, role: str) -> Optional[User]:
+    async def update_user_role(self, user_id: str, role: str) -> Optional[User]:
         """
         Update a user's role
         更新用户角色
@@ -415,13 +399,26 @@ class AuthService:
             Updated User if found, None otherwise
             如果找到返回更新的 User，否则返回 None
         """
-        user = self._users.get(user_id)
-        if user:
-            user.role = role
-            self._save_users()
-        return user
+        try:
+            user_uuid = uuid.UUID(user_id)
+        except ValueError:
+            return None
 
-    def deactivate_user(self, user_id: str) -> Optional[User]:
+        async with db_service.session_factory() as session:
+            result = await session.execute(
+                select(AppUser).where(AppUser.id == user_uuid)
+            )
+            db_user = result.scalar_one_or_none()
+
+            if db_user:
+                db_user.role = role
+                await session.commit()
+                await session.refresh(db_user)
+                logger.info(f"User role updated: {user_id} -> {role}")
+                return User.from_db_model(db_user)
+            return None
+
+    async def deactivate_user(self, user_id: str) -> Optional[User]:
         """
         Deactivate a user (soft delete)
         停用用户（软删除）
@@ -433,13 +430,26 @@ class AuthService:
             Updated User if found, None otherwise
             如果找到返回更新的 User，否则返回 None
         """
-        user = self._users.get(user_id)
-        if user:
-            user.is_active = False
-            self._save_users()
-        return user
+        try:
+            user_uuid = uuid.UUID(user_id)
+        except ValueError:
+            return None
 
-    def activate_user(self, user_id: str) -> Optional[User]:
+        async with db_service.session_factory() as session:
+            result = await session.execute(
+                select(AppUser).where(AppUser.id == user_uuid)
+            )
+            db_user = result.scalar_one_or_none()
+
+            if db_user:
+                db_user.is_active = False
+                await session.commit()
+                await session.refresh(db_user)
+                logger.info(f"User deactivated: {user_id}")
+                return User.from_db_model(db_user)
+            return None
+
+    async def activate_user(self, user_id: str) -> Optional[User]:
         """
         Activate a user
         激活用户
@@ -451,11 +461,47 @@ class AuthService:
             Updated User if found, None otherwise
             如果找到返回更新的 User，否则返回 None
         """
-        user = self._users.get(user_id)
-        if user:
-            user.is_active = True
-            self._save_users()
-        return user
+        try:
+            user_uuid = uuid.UUID(user_id)
+        except ValueError:
+            return None
+
+        async with db_service.session_factory() as session:
+            result = await session.execute(
+                select(AppUser).where(AppUser.id == user_uuid)
+            )
+            db_user = result.scalar_one_or_none()
+
+            if db_user:
+                db_user.is_active = True
+                await session.commit()
+                await session.refresh(db_user)
+                logger.info(f"User activated: {user_id}")
+                return User.from_db_model(db_user)
+            return None
+
+    async def _create_default_admin(self):
+        """
+        Create default admin user if no users exist
+        如果没有用户则创建默认管理员
+        """
+        async with db_service.session_factory() as session:
+            result = await session.execute(select(AppUser))
+            existing = result.first()
+
+            if not existing:
+                hashed_password = await self.hash_password("admin123")
+                admin_user = AppUser(
+                    id=uuid.uuid4(),
+                    username="admin",
+                    email="admin@example.com",
+                    hashed_password=hashed_password,
+                    role="admin",
+                    is_active=True,
+                )
+                session.add(admin_user)
+                await session.commit()
+                logger.info("Created default admin user: admin / admin123")
 
 
 # Global auth service instance

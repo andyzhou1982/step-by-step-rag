@@ -4,16 +4,22 @@ QA History service for persistent question-answer record storage
 
 Day 5 Enhancement: Store QA history for evaluation purposes
 Day 5 增强：存储问答历史用于评估
+
+Day 6 Enhancement: Now uses SQLAlchemy ORM instead of raw SQL
+Day 6 增强： 现在使用 SQLAlchemy ORM 替代原始 SQL
 """
 
 import uuid
 import traceback
-import json
 from datetime import datetime
 from typing import List, Dict, Optional
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+
+from sqlalchemy import select, delete, func
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from config import settings, get_logger
+from models.database import QAHistory
+from services.database_service import db_service
 
 logger = get_logger(__name__)
 
@@ -22,59 +28,40 @@ class QAHistoryService:
     """
     Service for managing QA history in PostgreSQL
     在 PostgreSQL 中管理问答历史的服务
+
+    Day 6 Enhancement: Uses SQLAlchemy ORM for database operations
+    Day 6 增强： 使用 SQLAlchemy ORM 进行数据库操作
     """
 
     def __init__(self):
         """
         Initialize the QA history service
         初始化问答历史服务
+
+        No initialization needed - database is managed by db_service
+        不需要初始化 - 数据库由 db_service 管理
         """
-        self._connection_string = settings.database_url.replace(
-            "postgresql://", "postgresql+asyncpg://"
-        )
-        self._async_engine = None
-        self._table_name = "qa_history"
+        pass
 
     async def connect(self):
         """
-        Connect to the database and initialize the QA history table
-        连接数据库并初始化问答历史表
-        """
-        self._async_engine = create_async_engine(self._connection_string)
+        Connect to the database (no-op for ORM)
+        连接数据库（ORM 不需要此操作）
 
-        # Create table if not exists
-        # 如果表不存在则创建
-        async with self._async_engine.connect() as conn:
-            await conn.execute(text(f"""
-                CREATE TABLE IF NOT EXISTS {self._table_name} (
-                    id VARCHAR(36) PRIMARY KEY,
-                    question TEXT NOT NULL,
-                    answer TEXT NOT NULL,
-                    contexts JSONB NOT NULL DEFAULT '[]',
-                    sources JSONB DEFAULT '{{}}',
-                    retrieval_method VARCHAR(50),
-                    confidence FLOAT DEFAULT 0.0,
-                    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-                    conversation_id VARCHAR(36)
-                )
-            """))
-            # Create index on created_at for efficient ordering
-            # 在 created_at 上创建索引以提高排序效率
-            await conn.execute(text(f"""
-                CREATE INDEX IF NOT EXISTS idx_qa_history_created_at
-                ON {self._table_name} (created_at DESC)
-            """))
-            await conn.commit()
-        logger.info("QA history table initialized")
+        The database connection is managed by db_service
+        数据库连接由 db_service 管理
+        """
+        pass
 
     async def disconnect(self):
         """
-        Disconnect from the database
-        断开数据库连接
+        Disconnect from the database (no-op for ORM)
+        断开数据库连接（ORM 不需要此操作）
+
+        The database connection is managed by db_service
+        数据库连接由 db_service 管理
         """
-        if self._async_engine:
-            await self._async_engine.dispose()
-        self._async_engine = None
+        pass
 
     async def add_record(
         self,
@@ -103,28 +90,28 @@ class QAHistoryService:
             成功返回记录 ID，否则返回 None
         """
         try:
-            record_id = str(uuid.uuid4())
-            async with self._async_engine.connect() as conn:
-                await conn.execute(text(f"""
-                    INSERT INTO {self._table_name}
-                    (id, question, answer, contexts, sources, retrieval_method,
-                     confidence, created_at, conversation_id)
-                    VALUES (:id, :question, :answer, :contexts, :sources,
-                            :retrieval_method, :confidence, :created_at, :conversation_id)
-                """), {
-                    "id": record_id,
-                    "question": question,
-                    "answer": answer,
-                    "contexts": json.dumps(contexts),
-                    "sources": json.dumps(sources or []),
-                    "retrieval_method": retrieval_method,
-                    "confidence": confidence,
-                    "created_at": datetime.now(),
-                    "conversation_id": conversation_id
-                })
-                await conn.commit()
-            logger.info(f"QA record saved: {record_id}")
-            return record_id
+            # Convert confidence to integer (0-100)
+            # 将置信度转换为整数（0-100）
+            confidence_int = int(confidence * 100) if confidence > 0 else 0
+
+            async with db_service.session_factory() as session:
+                record = QAHistory(
+                    id=str(uuid.uuid4()),
+                    question=question,
+                    answer=answer,
+                    contexts=contexts or [],
+                    sources=sources or {},
+                    retrieval_method=retrieval_method,
+                    confidence=confidence_int,
+                    created_at=datetime.utcnow(),
+                    conversation_id=conversation_id,
+                )
+                session.add(record)
+                await session.commit()
+                await session.refresh(record)
+
+                logger.info(f"QA record saved: {record.id}")
+                return str(record.id)
         except Exception as e:
             logger.error(f"Error adding QA record: {e}")
             logger.debug(f"Traceback:\n{traceback.format_exc()}")
@@ -141,26 +128,14 @@ class QAHistoryService:
             Record dict or None / 记录字典或 None
         """
         try:
-            async with self._async_engine.connect() as conn:
-                result = await conn.execute(text(f"""
-                    SELECT id, question, answer, contexts, sources,
-                           retrieval_method, confidence, created_at, conversation_id
-                    FROM {self._table_name}
-                    WHERE id = :id
-                """), {"id": record_id})
-                row = result.fetchone()
-                if row:
-                    return {
-                        "id": row.id,
-                        "question": row.question,
-                        "answer": row.answer,
-                        "contexts": row.contexts if isinstance(row.contexts, list) else json.loads(row.contexts or '[]'),
-                        "sources": row.sources if isinstance(row.sources, list) else json.loads(row.sources or '[]'),
-                        "retrieval_method": row.retrieval_method,
-                        "confidence": float(row.confidence or 0.0),
-                        "created_at": row.created_at,
-                        "conversation_id": row.conversation_id
-                    }
+            async with db_service.session_factory() as session:
+                result = await session.execute(
+                    select(QAHistory).where(QAHistory.id == record_id)
+                )
+                record = result.scalar_one_or_none()
+
+                if record:
+                    return record.to_dict()
                 return None
         except Exception as e:
             logger.error(f"Error getting QA record: {e}")
@@ -188,51 +163,33 @@ class QAHistoryService:
         try:
             offset = (page - 1) * page_size
 
-            # Build filter condition
-            # 构建过滤条件
-            where_clause = ""
-            params = {"offset": offset, "limit": page_size}
-            if conversation_id:
-                where_clause = "WHERE conversation_id = :conversation_id"
-                params["conversation_id"] = conversation_id
+            async with db_service.session_factory() as session:
+                # Build query
+                # 构建查询
+                query = select(QAHistory)
 
-            async with self._async_engine.connect() as conn:
+                # Apply filter if conversation_id provided
+                # 如果提供了 conversation_id 则应用过滤
+                if conversation_id:
+                    query = query.where(QAHistory.conversation_id == conversation_id)
+
                 # Get total count
                 # 获取总数
-                count_result = await conn.execute(text(f"""
-                    SELECT COUNT(*) as total FROM {self._table_name} {where_clause}
-                """), {k: v for k, v in params.items() if k != "offset" and k != "limit"})
-                total = count_result.fetchone().total
+                count_query = select(func.count()).select_from(query.subquery())
+                total_result = await session.execute(count_query)
+                total = total_result.scalar()
 
-                # Get records
-                # 获取记录
-                result = await conn.execute(text(f"""
-                    SELECT id, question, answer, contexts, sources,
-                           retrieval_method, confidence, created_at, conversation_id
-                    FROM {self._table_name}
-                    {where_clause}
-                    ORDER BY created_at DESC
-                    LIMIT :limit OFFSET :offset
-                """), params)
-                rows = result.fetchall()
+                # Get records with pagination
+                # 获取分页记录
+                query = query.order_by(QAHistory.created_at.desc())
+                query = query.limit(page_size).offset(offset)
 
-                records = []
-                for row in rows:
-                    records.append({
-                        "id": row.id,
-                        "question": row.question,
-                        "answer": row.answer,
-                        "contexts": row.contexts if isinstance(row.contexts, list) else json.loads(row.contexts or '[]'),
-                        "sources": row.sources if isinstance(row.sources, list) else json.loads(row.sources or '[]'),
-                        "retrieval_method": row.retrieval_method,
-                        "confidence": float(row.confidence or 0.0),
-                        "created_at": row.created_at,
-                        "conversation_id": row.conversation_id
-                    })
+                result = await session.execute(query)
+                records = result.scalars().all()
 
                 return {
-                    "records": records,
-                    "total": total,
+                    "records": [record.to_dict() for record in records],
+                    "total": total or 0,
                     "page": page,
                     "page_size": page_size
                 }
@@ -252,14 +209,12 @@ class QAHistoryService:
             Whether deletion was successful / 删除是否成功
         """
         try:
-            async with self._async_engine.connect() as conn:
-                result = await conn.execute(text(f"""
-                    DELETE FROM {self._table_name}
-                    WHERE id = :id
-                    RETURNING id
-                """), {"id": record_id})
-                await conn.commit()
-                return result.fetchone() is not None
+            async with db_service.session_factory() as session:
+                result = await session.execute(
+                    delete(QAHistory).where(QAHistory.id == record_id).returning(QAHistory.id)
+                )
+                await session.commit()
+                return result.scalar_one_or_none() is not None
         except Exception as e:
             logger.error(f"Error deleting QA record: {e}")
             logger.debug(f"Traceback:\n{traceback.format_exc()}")
@@ -281,45 +236,29 @@ class QAHistoryService:
             List of record dicts / 记录字典列表
         """
         try:
-            async with self._async_engine.connect() as conn:
-                query = f"""
-                    SELECT id, question, answer, contexts, sources,
-                           retrieval_method, confidence, created_at, conversation_id
-                    FROM {self._table_name}
-                """
-                conditions = []
-                params = {}
+            async with db_service.session_factory() as session:
+                query = select(QAHistory)
 
+                # Apply filters
+                # 应用过滤条件
+                conditions = []
                 if record_ids:
-                    conditions.append("id = ANY(:ids)")
-                    params["ids"] = record_ids
+                    conditions.append(QAHistory.id.in_(record_ids))
+
                 if conversation_id:
-                    conditions.append("conversation_id = :conversation_id")
-                    params["conversation_id"] = conversation_id
+                    conditions.append(QAHistory.conversation_id == conversation_id)
 
                 if conditions:
-                    query += " WHERE " + " AND ".join(conditions)
+                    from sqlalchemy import and_
+                    query = query.where(and_(*conditions))
 
-                query += " ORDER BY created_at DESC"
+                query = query.order_by(QAHistory.created_at.desc())
+                query = query.limit(10000)  # Limit export size
 
-                result = await conn.execute(text(query), params)
-                rows = result.fetchall()
+                result = await session.execute(query)
+                records = result.scalars().all()
 
-                records = []
-                for row in rows:
-                    records.append({
-                        "id": row.id,
-                        "question": row.question,
-                        "answer": row.answer,
-                        "contexts": row.contexts if isinstance(row.contexts, list) else json.loads(row.contexts or '[]'),
-                        "sources": row.sources if isinstance(row.sources, list) else json.loads(row.sources or '[]'),
-                        "retrieval_method": row.retrieval_method,
-                        "confidence": float(row.confidence or 0.0),
-                        "created_at": row.created_at.isoformat() if row.created_at else None,
-                        "conversation_id": row.conversation_id
-                    })
-
-                return records
+                return [record.to_dict() for record in records]
         except Exception as e:
             logger.error(f"Error exporting QA records: {e}")
             logger.debug(f"Traceback:\n{traceback.format_exc()}")

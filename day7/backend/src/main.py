@@ -8,17 +8,16 @@ Day 2： 增强了多格式文档支持
 Day 3: Added hybrid retrieval with BM25 indexing
 Day 3： 添加了带 BM25 索引的混合检索
 
+Day 7: Production Ready - Performance, Deployment, Monitoring
+Day 7： 生产就绪 - 性能、部署、监控
+
 Day 6: Security & Governance - Authentication, Authorization, Audit
 Day 6： 安全与治理 - 认证、授权、审计
-
-Day 7: Production Optimization - Caching, Retry, Metrics
-Day 7： 生产优化 - 缓存、重试、指标
 """
 
 import traceback
-import time
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
@@ -29,8 +28,8 @@ from services.retrieval_service import retrieval_service
 from services.document_registry import document_registry
 from services.qa_history_service import qa_history_service
 from services.audit_service import audit_service
-from services.cache_service import cache_service
-from services.performance_service import performance_service
+from services.auth_service import auth_service
+from services.database_service import db_service
 from models.schemas import HealthResponse
 from config import settings, setup_logging, get_logger
 
@@ -48,9 +47,29 @@ async def lifespan(app: FastAPI):
     # Startup: Connect to databases
     # 启动: 连接数据库
     logger.info("Starting up... Connecting to databases.")
+
+    # Connect to unified database service
+    # 连接到统一的数据库服务
+    await db_service.connect()
+
+    # Create all tables if they don't exist
+    # 创建所有不存在的表
+    logger.info("Creating database tables...")
+    await db_service.create_tables()
+
+    # Create default admin user if no users exist
+    # 如果没有用户则创建默认管理员
+    logger.info("Checking for default admin user...")
+    await auth_service._create_default_admin()
+
+    # Connect to vector store
+    # 连接到向量存储
     await vector_store.connect()
-    await document_registry.connect()
+
+    # Connect to QA history service
+    # 连接到 QA 历史服务
     await qa_history_service.connect()
+
     logger.info("Databases connected.")
 
     # Day 3: Build BM25 index from existing documents
@@ -66,29 +85,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Failed to build BM25 index: {e}", exc_info=True)
 
-    # Day 7: Initialize cache
-    # Day 7： 初始化缓存
-    if settings.cache_enabled:
-        logger.info("Initializing cache service...")
-        await cache_service.initialize()
-        logger.info("Cache service initialized.")
-
     yield
 
     # Shutdown: Disconnect from databases
     # 关闭: 断开数据库连接
     logger.info("Shutting down... Disconnecting from databases.")
     await vector_store.disconnect()
-    await document_registry.disconnect()
     await qa_history_service.disconnect()
-
-    # Day 7: Clear cache
-    # Day 7： 清空缓存
-    if settings.cache_enabled:
-        logger.info("Clearing cache...")
-        await cache_service.clear()
-        logger.info("Cache cleared.")
-
+    await db_service.disconnect()
     logger.info("Databases disconnected.")
 
 
@@ -97,21 +101,19 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Step-by-Step RAG API",
     description="""
-## Day 7: Production Optimization
-## Day 7: 生产优化
+## Day 7: Production Ready
+## Day 7: 生产就绪
 
-A production-ready RAG (Retrieval-Augmented Generation) system with comprehensive features.
-一个功能完整的生产级 RAG（检索增强生成）系统。
+A production-ready RAG system with performance optimization and monitoring capabilities.
+一个具有性能优化和监控功能的生产就绪 RAG 系统。
 
 ### Day 7 Features / Day 7 功能:
-- **Caching**: In-memory and optional Redis caching
-- **缓存**: 内存缓存和可选的 Redis 缓存
-- **Retry Logic**: Exponential backoff for failed requests
-- **重试逻辑**: 失败请求的指数退避重试
-- **Performance Metrics**: Request timing and throughput monitoring
-- **性能指标**: 请求计时和吞吐量监控
-- **Request Timeout**: Configurable timeout for external API calls
-- **请求超时**: 外部 API 调用的可配置超时
+- **Unified Database**: All data stored in PostgreSQL using SQLAlchemy ORM
+- **统一数据库**: 所有数据使用 SQLAlchemy ORM 存储在 PostgreSQL
+- **Performance**: Caching, retry logic, connection pooling
+- **性能**: 缓存、重试逻辑、连接池
+- **Monitoring**: Performance metrics and health checks
+- **监控**: 性能指标和健康检查
 
 ### Day 6 Features (Inherited) / Day 6 功能（继承）:
 - **Authentication**: JWT-based user authentication
@@ -123,6 +125,22 @@ A production-ready RAG (Retrieval-Augmented Generation) system with comprehensiv
 - **Content Filtering**: SQL injection, XSS, prompt injection protection
 - **内容过滤**: SQL 注入、XSS、提示注入防护
 
+### Day 3 Features (Inherited) / Day 3 功能（继承）:
+- **Hybrid search**: Vector + BM25 keyword search
+- **混合检索**: 向量 + BM25 关键词搜索
+- **Query rewriting**: Optional LLM-based query optimization
+- **查询重写**: 可选的基于 LLM 的查询优化
+- **Re-ranking**: Cross-encoder result re-ranking
+- **重排序**: 交叉编码器结果重排序
+
+### Day 2 Features (Inherited) / Day 2 功能（继承）:
+- **Multi-format support**: PDF, Word, HTML, Markdown, TXT
+- **多格式支持**: PDF, Word, HTML, Markdown, TXT
+- **Metadata extraction**: Title, file type, size
+- **元数据提取**: 标题、文件类型、大小
+- **Smart chunking**: Format-aware text splitting
+- **智能分块**: 格式感知的文本分割
+
 ### Supported Formats / 支持的格式:
 - `.txt` - Plain text / 纯文本
 - `.md` - Markdown documents / Markdown 文档
@@ -131,46 +149,30 @@ A production-ready RAG (Retrieval-Augmented Generation) system with comprehensiv
 - `.html` - HTML web pages / HTML 网页
 
 ### API Endpoints / API 端点:
-#### Metrics / 指标 (Day 7):
-- `GET /metrics` - Prometheus metrics / Prometheus 指标
-- `GET /cache/stats` - Cache statistics / 缓存统计
-
-#### Authentication / 认证 (Day 6):
+#### Authentication / 认证:
 - `POST /auth/register` - Register new user / 注册新用户
 - `POST /auth/login` - Login and get token / 登录获取 token
+- `POST /auth/logout` - Logout / 登出
+- `GET /auth/me` - Get current user info / 获取当前用户信息
+- `GET /auth/users` - List all users (admin) / 列出所有用户（管理员）
+- `PUT /auth/users/{id}/role` - Update user role (admin) / 更新用户角色（管理员）
 
 #### Documents / 文档:
 - `POST /documents/upload` - Upload document / 上传文档
 - `GET /documents/list` - List documents / 列出文档
+- `DELETE /documents/{id}` - Delete document / 删除文档
 
 #### Chat / 聊天:
 - `POST /chat/ask` - Ask question / 提问
+- `GET /chat/retrieval-config` - Get retrieval config / 获取检索配置
+
+#### Audit / 审计:
+- `GET /audit/logs` - Get audit logs (admin) / 获取审计日志（管理员）
+- `GET /audit/summary` - Get audit summary (admin) / 获取审计摘要（管理员）
 """,
     version="7.0.0",
     lifespan=lifespan
 )
-
-
-# Day 7: Request timing middleware
-# Day 7： 请求计时中间件
-@app.middleware("http")
-async def add_request_timing(request: Request, call_next):
-    """Add request timing to response headers"""
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = time.time() - start_time
-    response.headers["X-Process-Time"] = str(process_time)
-
-    # Record metrics
-    if settings.metrics_enabled:
-        performance_service.record_request(
-            method=request.method,
-            path=request.url.path,
-            duration=process_time,
-            status_code=response.status_code
-        )
-    return response
-
 
 # Add CORS middleware for frontend access
 # 添加 CORS 中间件以供前端访问
@@ -206,18 +208,21 @@ async def root():
         "version": "7.0.0",
         "day": 7,
         "features": [
-            "caching",
-            "retry-logic",
-            "metrics",
-            "timeouts",
             "authentication",
             "authorization",
             "audit-logging",
             "content-filtering",
             "hybrid-search",
+            "bm25",
+            "query-rewrite",
+            "rerank",
+            "multi-format",
+            "metadata",
+            "smart-chunking",
             "streaming",
             "citations",
             "evaluation",
+            "tracing"
         ],
         "docs": "/docs"
     }
@@ -237,55 +242,21 @@ async def health_check():
     # Day 3： 检查 BM25 索引状态
     bm25_indexed = retrieval_service._bm25_index._index is not None
 
-    # Day 6: Get audit log count
-    # Day 6： 获取审计日志计数
-    audit_log_count = len(audit_service._logs)
+    # Day 6: Get audit log count from database
+    # Day 6： 从数据库获取审计日志计数
+    logs = await audit_service.get_logs(limit=1)
+    audit_log_count = len(logs) if logs else 0  # Just check if logs exist
 
     return HealthResponse(
         status="healthy",
         database=db_status,
         version="7.0.0",
-        day=7,
+        day=6,
         bm25_indexed=bm25_indexed,
         streaming_enabled=True,
         evaluation_enabled=True,
         tracing_enabled=True
     )
-
-
-# Day 7: Metrics endpoint
-# Day 7： 指标端点
-@app.get("/metrics")
-async def get_metrics():
-    """
-    Get Prometheus-style metrics
-    获取 Prometheus 风格的指标
-    """
-    if not settings.metrics_enabled:
-        return {"error": "Metrics disabled"}
-
-    return {
-        "metrics": performance_service.get_metrics(),
-        "cache_stats": {
-            "enabled": settings.cache_enabled,
-            "type": "redis" if settings.use_redis else "memory",
-            "stats": cache_service.get_stats() if settings.cache_enabled else {}
-        }
-    }
-
-
-# Day 7: Cache statistics endpoint
-# Day 7： 缓存统计端点
-@app.get("/cache/stats")
-async def get_cache_stats():
-    """
-    Get cache statistics
-    获取缓存统计
-    """
-    if not settings.cache_enabled:
-        return {"error": "Cache disabled"}
-
-    return cache_service.get_stats()
 
 
 if __name__ == "__main__":

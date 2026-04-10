@@ -25,6 +25,8 @@ from services.retrieval_service import retrieval_service
 from services.document_registry import document_registry
 from services.qa_history_service import qa_history_service
 from services.audit_service import audit_service
+from services.auth_service import auth_service
+from services.database_service import db_service
 from models.schemas import HealthResponse
 from config import settings, setup_logging, get_logger
 
@@ -42,9 +44,29 @@ async def lifespan(app: FastAPI):
     # Startup: Connect to databases
     # 启动: 连接数据库
     logger.info("Starting up... Connecting to databases.")
+
+    # Connect to unified database service
+    # 连接到统一的数据库服务
+    await db_service.connect()
+
+    # Create all tables if they don't exist
+    # 创建所有不存在的表
+    logger.info("Creating database tables...")
+    await db_service.create_tables()
+
+    # Create default admin user if no users exist
+    # 如果没有用户则创建默认管理员
+    logger.info("Checking for default admin user...")
+    await auth_service._create_default_admin()
+
+    # Connect to vector store
+    # 连接到向量存储
     await vector_store.connect()
-    await document_registry.connect()
+
+    # Connect to QA history service
+    # 连接到 QA 历史服务
     await qa_history_service.connect()
+
     logger.info("Databases connected.")
 
     # Day 3: Build BM25 index from existing documents
@@ -66,8 +88,8 @@ async def lifespan(app: FastAPI):
     # 关闭: 断开数据库连接
     logger.info("Shutting down... Disconnecting from databases.")
     await vector_store.disconnect()
-    await document_registry.disconnect()
     await qa_history_service.disconnect()
+    await db_service.disconnect()
     logger.info("Databases disconnected.")
 
 
@@ -209,9 +231,10 @@ async def health_check():
     # Day 3： 检查 BM25 索引状态
     bm25_indexed = retrieval_service._bm25_index._index is not None
 
-    # Day 6: Get audit log count
-    # Day 6： 获取审计日志计数
-    audit_log_count = len(audit_service._logs)
+    # Day 6: Get audit log count from database
+    # Day 6： 从数据库获取审计日志计数
+    logs = await audit_service.get_logs(limit=1)
+    audit_log_count = len(logs) if logs else 0  # Just check if logs exist
 
     return HealthResponse(
         status="healthy",

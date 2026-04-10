@@ -79,7 +79,7 @@ async def get_current_user(
         )
 
     token = parts[1]
-    token_data = auth_service.decode_token(token)
+    token_data = await auth_service.decode_token(token)
 
     if not token_data:
         raise HTTPException(
@@ -88,7 +88,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user = auth_service.get_user_by_id(token_data.user_id)
+    user = await auth_service.get_user_by_id(token_data.user_id)
     if not user or not user.is_active:
         raise HTTPException(
             status_code=401,
@@ -170,7 +170,7 @@ async def register(
 
         # Register user
         # 注册用户
-        user = auth_service.register_user(
+        user = await auth_service.register_user(
             username=req.username,
             email=req.email,
             password=req.password,
@@ -179,11 +179,11 @@ async def register(
 
         # Generate token
         # 生成 token
-        token = auth_service.create_access_token(user)
+        token = await auth_service.create_access_token(user)
 
         # Log registration
         # 记录注册
-        audit_service.log_action(
+        await audit_service.log_action(
             action=AuditAction.USER_CREATE,
             user_id=user.id,
             username=user.username,
@@ -219,12 +219,12 @@ async def login(
     """
     # Authenticate user
     # 认证用户
-    user = auth_service.authenticate_user(req.username, req.password)
+    user = await auth_service.authenticate_user(req.username, req.password)
 
     if not user:
         # Log failed login attempt
         # 记录失败的登录尝试
-        audit_service.log_login(
+        await audit_service.log_login(
             user_id="unknown",
             username=req.username,
             ip_address=get_client_ip(request),
@@ -238,11 +238,11 @@ async def login(
 
     # Generate token
     # 生成 token
-    token = auth_service.create_access_token(user)
+    token = await auth_service.create_access_token(user)
 
     # Log successful login
     # 记录成功的登录
-    audit_service.log_login(
+    await audit_service.log_login(
         user_id=user.id,
         username=user.username,
         ip_address=get_client_ip(request),
@@ -274,7 +274,7 @@ async def logout(
     """
     # Log logout
     # 记录登出
-    audit_service.log_logout(
+    await audit_service.log_logout(
         user_id=current_user.id,
         username=current_user.username,
         ip_address=get_client_ip(request),
@@ -319,7 +319,7 @@ async def list_users(
     Day 6: New endpoint for user list
     Day 6： 用户列表的新端点
     """
-    users = auth_service.get_all_users()
+    users = await auth_service.get_all_users()
     return UserListResponse(
         users=[
             UserInfo(
@@ -362,13 +362,13 @@ async def update_user_role(
 
     # Update role
     # 更新角色
-    user = auth_service.update_user_role(user_id, req.role)
+    user = await auth_service.update_user_role(user_id, req.role)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     # Log action
     # 记录操作
-    audit_service.log_action(
+    await audit_service.log_action(
         action=AuditAction.USER_UPDATE,
         user_id=current_user.id,
         username=current_user.username,
@@ -410,13 +410,13 @@ async def deactivate_user(
             detail="Cannot deactivate yourself"
         )
 
-    user = auth_service.deactivate_user(user_id)
+    user = await auth_service.deactivate_user(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     # Log action
     # 记录操作
-    audit_service.log_action(
+    await audit_service.log_action(
         action=AuditAction.USER_DEACTIVATE,
         user_id=current_user.id,
         username=current_user.username,
@@ -449,13 +449,13 @@ async def activate_user(
     Day 6: New endpoint for user activation
     Day 6： 激活用户的新端点
     """
-    user = auth_service.activate_user(user_id)
+    user = await auth_service.activate_user(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     # Log action
     # 记录操作
-    audit_service.log_action(
+    await audit_service.log_action(
         action=AuditAction.USER_ACTIVATE,
         user_id=current_user.id,
         username=current_user.username,

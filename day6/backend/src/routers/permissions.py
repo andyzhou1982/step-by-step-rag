@@ -49,7 +49,7 @@ async def grant_permission(
 
     # Check if target user exists
     # 检查目标用户是否存在
-    target_user = auth_service.get_user_by_id(req.user_id)
+    target_user = await auth_service.get_user_by_id(req.user_id)
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -64,7 +64,7 @@ async def grant_permission(
 
     # Log action
     # 记录操作
-    audit_service.log_action(
+    await audit_service.log_action(
         action=AuditAction.PERMISSION_GRANT,
         user_id=current_user.id,
         username=current_user.username,
@@ -110,7 +110,7 @@ async def revoke_permission(
 
     # Log action
     # 记录操作
-    audit_service.log_action(
+    await audit_service.log_action(
         action=AuditAction.PERMISSION_REVOKE,
         user_id=current_user.id,
         username=current_user.username,
