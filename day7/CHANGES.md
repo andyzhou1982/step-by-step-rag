@@ -5,6 +5,22 @@ This document lists the core changes from Day 6 to Day 7 and the reasons behind 
 
 ---
 
+## 重要说明 / Important Notice
+
+Day 7 完全同步了 Day 6 的数据库迁移改进，包括：
+Day 7 fully syncs with Day 6's database migration improvements, including:
+
+- ✅ SQLAlchemy ORM 统一数据存储
+- ✅ 用户数据存储在 PostgreSQL（替代 JSON 文件）
+- ✅ 审计日志存储在 PostgreSQL
+- ✅ 文档注册表使用 ORM
+- ✅ 问答历史使用 ORM
+
+详见 Day 6 CHANGES.md 的"数据库迁移增强"章节。
+See "Database Migration Enhancement" section in Day 6 CHANGES.md for details.
+
+---
+
 ## 1. 新增文件 / New Files
 
 ### `backend/src/services/cache_service.py`

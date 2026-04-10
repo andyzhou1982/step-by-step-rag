@@ -339,10 +339,334 @@ class HealthResponse(BaseModel):
 
 ---
 
-## 6. 后续改进 / Future Improvements (Day 7+)
+## 6. 数据库迁移增强 / Database Migration Enhancement (Post-Release Update)
 
-- [ ] 用户数据持久化到 PostgreSQL
-- [ ] 权限数据持久化到 PostgreSQL
+### 概述 / Overview
+
+**重要更新 / Important Update:** Day 6 已完成从 JSON 文件存储到 PostgreSQL 数据库的完整迁移。
+**Important Update:** Day 6 has completed full migration from JSON file storage to PostgreSQL database.
+
+这次迁移统一了所有数据存储方式，使用 SQLAlchemy ORM 替代原始 SQL 和 JSON 文件。
+This migration unified all data storage methods, using SQLAlchemy ORM instead of raw SQL and JSON files.
+
+---
+
+### 新增文件 / New Files
+
+### `backend/src/models/database.py`
+
+**功能 / Purpose:**
+统一的数据库模型定义，使用 SQLAlchemy ORM。
+
+**为什么新增 / Why Added:**
+- 统一管理所有数据库表结构
+- 提供类型安全的 ORM 模型
+- 支持异步数据库操作
+
+**核心模型 / Core Models:**
+```python
+class Base(AsyncAttrs, DeclarativeBase):
+    """所有数据库模型的基类 / Base class for all database models"""
+
+class AppUser(Base):
+    """用户表 / User table"""
+    __tablename__ = "app_users"
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    username = Column(String(50), unique=True, nullable=False)
+    email = Column(String(255), unique=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    role = Column(String(20), default="user")
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)
+
+class AuditLog(Base):
+    """审计日志表 / Audit log table"""
+    __tablename__ = "audit_logs"
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    action = Column(String(50))
+    user_id = Column(UUID(as_uuid=True))
+    username = Column(String(50))
+    resource_type = Column(String(50))
+    resource_id = Column(UUID(as_uuid=True))
+    details = Column(JSONB, default=dict)
+    status = Column(String(20), default="success")
+
+class DocumentRegistry(Base):
+    """文档注册表 / Document registry table"""
+    __tablename__ = "document_registry"
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    filename = Column(String(255), unique=True, nullable=False)
+    file_type = Column(String(50))
+    file_size = Column(Integer)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    chunk_count = Column(Integer, default=0)
+
+class QAHistory(Base):
+    """问答历史表 / QA history table"""
+    __tablename__ = "qa_history"
+    id = Column(String(36), primary_key=True)  # VARCHAR to match existing table
+    question = Column(Text, nullable=False)
+    answer = Column(Text, nullable=False)
+    contexts = Column(JSONB, default=list)
+    sources = Column(JSONB, default=dict)
+    retrieval_method = Column(String(50))
+    confidence = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    conversation_id = Column(String(36))
+```
+
+---
+
+### `backend/src/services/database_service.py`
+
+**功能 / Purpose:**
+统一的数据库连接和会话管理服务。
+
+**核心类 / Core Classes:**
+```python
+class DatabaseService:
+    """统一数据库服务 / Unified database service"""
+
+    def __init__(self):
+        # 使用 asyncpg 驱动
+        connection_string = settings.database_url.replace(
+            "postgresql://", "postgresql+asyncpg://"
+        )
+        self._engine = create_async_engine(
+            connection_string,
+            echo=False,
+            pool_pre_ping=True
+        )
+        self._session_factory = async_sessionmaker(
+            self._engine,
+            class_=AsyncSession,
+            expire_on_commit=False
+        )
+
+    async def connect(self):
+        """连接数据库 / Connect to database"""
+
+    async def disconnect(self):
+        """断开连接 / Disconnect"""
+
+    async def create_tables(self):
+        """创建所有表 / Create all tables"""
+
+    @property
+    def session_factory(self):
+        """获取会话工厂 / Get session factory"""
+```
+
+---
+
+### 修改的文件 / Modified Files
+
+### `backend/pyproject.toml`
+
+**新增依赖 / Added Dependencies:**
+```toml
+# Database ORM
+"sqlalchemy[asyncio]>=2.0.0",  # SQLAlchemy async ORM
+```
+
+---
+
+### `backend/src/services/auth_service.py`
+
+**主要变更 / Major Changes:**
+- 所有方法改为异步（`async`）
+- 使用 SQLAlchemy ORM 替代 JSON 文件存储
+- 添加 `await db_service.session_factory()` 上下文管理器
+
+**变更示例 / Change Example:**
+```python
+# 之前 / Before: JSON 文件存储
+def _load_users(self) -> List[User]:
+    with open(self.users_file, "r") as f:
+        data = json.load(f)
+    return [User(**u) for u in data]
+
+# 之后 / After: SQLAlchemy ORM
+async def authenticate_user(self, username: str, password: str) -> Optional[User]:
+    async with db_service.session_factory() as session:
+        result = await session.execute(
+            select(AppUser).where(AppUser.username == username)
+        )
+        db_user = result.scalar_one_or_none()
+        # ... 验证逻辑
+```
+
+---
+
+### `backend/src/services/audit_service.py`
+
+**主要变更 / Major Changes:**
+- 所有方法改为异步（`async`）
+- 使用 SQLAlchemy ORM 存储审计日志
+- JSONB 类型用于灵活的 details 存储
+
+**变更示例 / Change Example:**
+```python
+async def log_action(self, action: AuditAction, ...):
+    async with db_service.session_factory() as session:
+        db_log = AuditLog(
+            id=uuid.uuid4(),
+            timestamp=datetime.utcnow(),
+            action=action.value,
+            details=details,  # JSONB automatically
+            # ...
+        )
+        session.add(db_log)
+        await session.commit()
+```
+
+---
+
+### `backend/src/services/document_registry.py`
+
+**主要变更 / Major Changes:**
+- 从原始 SQL 改为 SQLAlchemy ORM
+- 字段名 `upload_date` → `created_at`（与数据库表结构匹配）
+
+---
+
+### `backend/src/services/qa_history_service.py`
+
+**主要变更 / Major Changes:**
+- 从原始 SQL 改为 SQLAlchemy ORM
+- ID 类型使用 String(36) 而非 UUID（与现有表匹配）
+
+---
+
+### `backend/src/main.py`
+
+**主要变更 / Major Changes:**
+```python
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 启动时 / On startup
+    await db_service.connect()
+    await db_service.create_tables()  # 自动创建表
+    await auth_service._create_default_admin()  # 创建默认管理员
+
+    yield
+
+    # 关闭时 / On shutdown
+    await db_service.disconnect()
+```
+
+---
+
+### 路由文件更新 / Router Files Update
+
+**修改的文件 / Modified Files:**
+- `backend/src/routers/auth.py`
+- `backend/src/routers/audit.py`
+- `backend/src/routers/permissions.py`
+
+**变更内容 / Changes:**
+- 所有服务调用添加 `await` 关键字
+- 例如：`auth_service.authenticate_user()` → `await auth_service.authenticate_user()`
+
+---
+
+### 数据库表结构 / Database Table Structure
+
+**创建表的 SQL 参考 / SQL Reference for Table Creation:**
+
+```sql
+-- 用户表 / User table
+CREATE TABLE app_users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    hashed_password VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'user',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    last_login TIMESTAMP
+);
+
+-- 审计日志表 / Audit log table
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
+    action VARCHAR(50) NOT NULL,
+    user_id UUID NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    resource_type VARCHAR(50) NOT NULL,
+    resource_id UUID,
+    details JSONB NOT NULL DEFAULT '{}',
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'success',
+    error_message TEXT
+);
+
+-- 文档注册表 / Document registry
+CREATE TABLE document_registry (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    filename VARCHAR(255) UNIQUE NOT NULL,
+    file_type VARCHAR(50) NOT NULL,
+    file_size INTEGER NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    chunk_count INTEGER NOT NULL DEFAULT 0
+);
+
+-- 问答历史表 / QA history table
+CREATE TABLE qa_history (
+    id VARCHAR(36) PRIMARY KEY,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    contexts JSONB NOT NULL DEFAULT '[]',
+    sources JSONB NOT NULL DEFAULT '{}',
+    retrieval_method VARCHAR(50),
+    confidence INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    conversation_id VARCHAR(36)
+);
+```
+
+**索引 / Indexes:**
+```sql
+CREATE INDEX idx_app_users_username ON app_users(username);
+CREATE INDEX idx_app_users_email ON app_users(email);
+CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp);
+CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX idx_document_registry_filename ON document_registry(filename);
+CREATE INDEX idx_qa_history_created_at ON qa_history(created_at);
+```
+
+---
+
+### 兼容性说明 / Compatibility Notes
+
+1. **现有数据 / Existing Data:** 本次迁移与现有数据库表结构兼容，不会影响 rag_documents 表（由 LangChain PGVector 管理）
+
+2. **类型匹配 / Type Matching:**
+   - `qa_history.id` 和 `conversation_id` 使用 VARCHAR(36) 以匹配现有表结构
+   - 其他表使用 UUID 类型
+
+3. **字段名称 / Field Names:**
+   - `document_registry.created_at` 而非 `upload_date`
+
+---
+
+### 迁移后验证 / Post-Migration Verification
+
+启动后端服务时，会自动：
+1. 连接到数据库
+2. 创建所有表（如果不存在）
+3. 创建默认管理员用户（admin / admin123）
+
+---
+
+## 7. 后续改进 / Future Improvements (Day 7+)
+
+- [x] 用户数据持久化到 PostgreSQL ✅ (已完成)
+- [x] 审计日志持久化到 PostgreSQL ✅ (已完成)
 - [ ] OAuth2/OIDC 集成
 - [ ] 双因素认证（2FA）
 - [ ] 更复杂的内容过滤规则

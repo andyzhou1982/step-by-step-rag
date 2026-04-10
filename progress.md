@@ -5,6 +5,86 @@
   WHEN: 每个阶段完成或有重要进展时更新
 -->
 
+## Session: 2026-04-11 (Day 6/Day 7 数据库迁移到 SQLAlchemy ORM)
+
+### 数据库迁移重构
+- **Status:** complete
+- **Started:** 2026-04-11
+- 需求: 将用户和登录记录的存储方式从 JSON 文件修改为 PostgreSQL 数据库存储
+- 扩展需求: 统一所有数据库存储方式为 SQLAlchemy ORM（用户、审计日志、文档注册表、QA 历史）
+- Actions taken:
+  - **新增数据库模型** (`models/database.py`):
+    - `Base`: 所有 ORM 模型的基类（AsyncAttrs + DeclarativeBase）
+    - `AppUser`: 用户表（UUID 主键，用户名/邮箱唯一索引）
+    - `AuditLog`: 审计日志表（JSONB details 字段）
+    - `DocumentRegistry`: 文档注册表（created_at 替代 upload_date）
+    - `QAHistory`: 问答历史表（String(36) ID 类型兼容现有表）
+  - **新增数据库服务** (`services/database_service.py`):
+    - `DatabaseService`: 统一数据库连接和会话管理
+    - 使用 asyncpg 驱动（postgresql+asyncpg://）
+    - async_sessionmaker 会话工厂
+    - connect()/disconnect()/create_tables() 生命周期方法
+  - **认证服务重构** (`services/auth_service.py`):
+    - 所有方法改为异步（async）
+    - JSON 文件存储 → SQLAlchemy ORM
+    - 移除 _load_users() 和 _save_users() 方法
+    - 使用 select(AppUser).where() 查询
+    - session.add() + session.commit() 保存
+  - **审计服务重构** (`services/audit_service.py`):
+    - 所有方法改为异步
+    - JSON 文件存储 → SQLAlchemy ORM
+    - JSONB 类型存储 details
+  - **文档注册表重构** (`services/document_registry.py`):
+    - 原始 SQL → SQLAlchemy ORM
+    - 字段名 upload_date → created_at
+  - **QA 历史服务重构** (`services/qa_history_service.py`):
+    - 原始 SQL → SQLAlchemy ORM
+    - 移除 UUID 转换（使用 String(36) 直接查询）
+  - **主程序启动流程** (`main.py`):
+    - 启动时调用 db_service.connect()
+    - 调用 db_service.create_tables() 自动创建表
+    - 调用 auth_service._create_default_admin() 创建默认管理员
+    - 关闭时调用 db_service.disconnect()
+  - **路由文件更新**:
+    - `routers/auth.py`: 所有调用添加 await
+    - `routers/audit.py`: 所有调用添加 await
+    - `routers/permissions.py`: 所有调用添加 await
+  - **Day 7 同步**: 所有更改同步到 day7/ 目录
+  - **依赖更新**: 添加 sqlalchemy[asyncio]>=2.0.0
+  - **Bug 修复**:
+    - 修复 auth_service.py 空函数体（添加 pass）
+    - 修复 database_service.py SQL 文本包裹（添加 text()）
+    - 修复路由 await 缺失（运行时错误）
+    - 修复字段名不匹配（upload_date → created_at）
+    - 修复 QAHistory ID 类型（UUID → String(36)）
+  - **文档更新**:
+    - day6/CHANGES.md: 添加"数据库迁移增强"章节
+    - day7/CHANGES.md: 添加 Day 6 数据库迁移继承说明
+- Files created:
+  - day6/backend/src/models/database.py (新增)
+  - day6/backend/src/services/database_service.py (新增)
+  - day7/backend/src/models/database.py (同步)
+  - day7/backend/src/services/database_service.py (同步)
+- Files modified:
+  - day6/backend/pyproject.toml (添加 sqlalchemy)
+  - day6/backend/src/main.py (数据库初始化)
+  - day6/backend/src/services/auth_service.py (ORM 重构)
+  - day6/backend/src/services/audit_service.py (ORM 重构)
+  - day6/backend/src/services/document_registry.py (ORM 重构)
+  - day6/backend/src/services/qa_history_service.py (ORM 重构)
+  - day6/backend/src/routers/auth.py (添加 await)
+  - day6/backend/src/routers/audit.py (添加 await)
+  - day6/backend/src/routers/permissions.py (添加 await)
+  - day7/backend/pyproject.toml (同步)
+  - day7/backend/src/main.py (同步)
+  - day7/backend/src/services/* (同步)
+  - day7/backend/src/routers/* (同步)
+  - day6/CHANGES.md (文档更新)
+  - day7/CHANGES.md (文档更新)
+- Git commit: `refactor(day6, day7): 统一数据库存储方式为 SQLAlchemy ORM`
+
+---
+
 ## Session: 2026-04-10 (Day 7 同步 Day 6 修复 + Day 7 完整功能)
 
 ### Bug 修复
