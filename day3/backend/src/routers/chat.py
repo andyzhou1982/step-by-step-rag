@@ -6,7 +6,6 @@ Day 3 Enhancement: Hybrid search, query rewriting, and re-ranking
 Day 3 增强： 混合检索、查询重写和重排序
 """
 
-import traceback
 
 from fastapi import APIRouter, HTTPException
 from typing import Dict, List
@@ -209,8 +208,7 @@ async def ask_question(request: ChatRequest):
     except Exception as e:
         # Log the error with full traceback
         # 记录错误和完整堆栈
-        logger.error(f"Error processing question: {str(e)}")
-        logger.debug(traceback.format_exc())
+        logger.error(f"Error processing question: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Error processing question: {str(e)} "

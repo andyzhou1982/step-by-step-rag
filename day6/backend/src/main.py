@@ -12,8 +12,6 @@ Day 6: Security & Governance - Authentication, Authorization, Audit
 Day 6： 安全与治理 - 认证、授权、审计
 """
 
-import traceback
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager

@@ -9,7 +9,6 @@ Day 4 Enhancement: Streaming, citations, confidence scoring
 Day 4 增强： 流式输出、引用溯源、置信度评分
 """
 
-import traceback
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -348,8 +347,7 @@ async def ask_question(request: ChatRequest):
         )
 
     except Exception as e:
-        logger.error(f"Error processing question: {str(e)}")
-        logger.debug(traceback.format_exc())
+        logger.error(f"Error processing question: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Error processing question: {str(e)} "
@@ -523,8 +521,7 @@ async def stream_answer(request: ChatRequest):
         except Exception as e:
             # Log the error with full traceback
             # 记录错误和完整堆栈
-            logger.error(f"Stream error: {str(e)}")
-            logger.debug(traceback.format_exc())
+            logger.error(f"Stream error: {str(e)}", exc_info=True)
             error_chunk = StreamChunk(
                 type="error",
                 error=str(e),

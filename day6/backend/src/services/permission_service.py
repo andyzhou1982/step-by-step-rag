@@ -8,7 +8,6 @@ Day 6： 安全与治理
 
 import os
 import json
-import traceback
 from datetime import datetime
 from typing import Optional, List, Dict, Set
 from dataclasses import dataclass, field
@@ -140,8 +139,7 @@ class PermissionService:
                             self._permissions[perm.document_id] = {}
                         self._permissions[perm.document_id][perm.user_id] = perm
         except Exception as e:
-            logger.error(f"Error loading permissions: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
+            logger.error(f"Error loading permissions: {e}", exc_info=True)
             self._permissions = {}
 
     def _save_permissions(self):
@@ -161,8 +159,7 @@ class PermissionService:
             with open(self._permissions_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            logger.error(f"Error saving permissions: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
+            logger.error(f"Error saving permissions: {e}", exc_info=True)
 
     def grant_permission(
         self,

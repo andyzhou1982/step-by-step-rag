@@ -9,7 +9,6 @@ Day 3: Added hybrid retrieval with BM25 indexing
 Day 3： 添加了带 BM25 索引的混合检索
 """
 
-import traceback
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

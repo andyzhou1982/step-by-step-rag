@@ -156,10 +156,12 @@ class RetryService:
                     await asyncio.sleep(wait_time)
                 else:
                     logger.error(
-                        f"All {attempts} retry attempts failed. Last error: {str(e)}"
+                        f"All {attempts} retry attempts failed. Last error: {str(e)}",
+                        exc_info=True
                     )
                     logger.error(
-                        f"所有 {attempts} 次重试尝试失败。最后错误: {str(e)}"
+                        f"所有 {attempts} 次重试尝试失败。最后错误: {str(e)}",
+                        exc_info=True
                     )
 
         raise last_exception

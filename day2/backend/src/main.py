@@ -6,7 +6,6 @@ Day 2: Enhanced with multi-format document support
 Day 2： 增强了多格式文档支持
 """
 
-import traceback
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

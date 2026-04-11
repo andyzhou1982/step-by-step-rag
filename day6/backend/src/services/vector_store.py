@@ -10,7 +10,6 @@ Day 3 增强： 添加了检索所有文档以构建 BM25 索引的方法
 """
 
 import json
-import traceback
 from langchain_postgres import PGVectorStore
 from langchain_postgres.v2.engine import PGEngine
 from langchain_core.documents import Document
@@ -283,8 +282,7 @@ class VectorStoreService:
                     })
                 return documents
         except Exception as e:
-            logger.warning(f"Failed to get documents for BM25: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
+            logger.warning(f"Failed to get documents for BM25: {e}", exc_info=True)
             return []
 
     async def delete_document(self, document_id: str) -> bool:

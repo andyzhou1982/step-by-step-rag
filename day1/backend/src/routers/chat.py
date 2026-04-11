@@ -3,7 +3,6 @@ Chat API routes for question answering
 问答的聊天 API 路由
 """
 
-import traceback
 
 from fastapi import APIRouter, HTTPException
 from typing import Dict, List
@@ -103,8 +102,7 @@ async def ask_question(request: ChatRequest):
     except Exception as e:
         # Log the error with full traceback
         # 记录错误和完整堆栈
-        logger.error(f"Error processing question: {str(e)}")
-        logger.debug(traceback.format_exc())
+        logger.error(f"Error processing question: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Error processing question: {str(e)} "

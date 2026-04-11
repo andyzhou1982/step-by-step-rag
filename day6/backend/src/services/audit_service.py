@@ -9,7 +9,6 @@ Day 6 Enhancement: Uses PostgreSQL instead of JSON files
 Day 6 增强： 使用 PostgreSQL 替代 JSON 文件
 """
 
-import traceback
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, field

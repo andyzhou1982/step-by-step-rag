@@ -52,7 +52,7 @@ class DatabaseService:
                 await conn.execute(text("SELECT 1"))
             logger.info("Database connected successfully")
         except Exception as e:
-            logger.error(f"Failed to connect to database: {e}")
+            logger.error(f"Failed to connect to database: {e}", exc_info=True)
             raise
 
     async def disconnect(self):
@@ -67,7 +67,7 @@ class DatabaseService:
                 await conn.run_sync(Base.metadata.create_all)
             logger.info("Database tables created successfully")
         except Exception as e:
-            logger.error(f"Failed to create tables: {e}")
+            logger.error(f"Failed to create tables: {e}", exc_info=True)
             raise
 
     @property

@@ -6,7 +6,6 @@ Day 2 Enhancement: Support for file type filtering in search
 Day 2 增强： 支持搜索中的文件类型过滤
 """
 
-import traceback
 
 from fastapi import APIRouter, HTTPException
 from typing import Dict, List
@@ -123,8 +122,7 @@ async def ask_question(request: ChatRequest):
     except Exception as e:
         # Log the error with full traceback
         # 记录错误和完整堆栈
-        logger.error(f"Error processing question: {str(e)}")
-        logger.debug(traceback.format_exc())
+        logger.error(f"Error processing question: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Error processing question: {str(e)} "

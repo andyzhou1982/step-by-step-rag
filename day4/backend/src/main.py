@@ -15,7 +15,6 @@ Day 4： 添加了统一的日志系统
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-import traceback
 
 from routers import documents, chat
 from services.vector_store import vector_store
@@ -63,9 +62,8 @@ async def lifespan(app: FastAPI):
             logger.info("No documents found for BM25 index.")
             logger.info("未找到用于 BM25 索引的文档。")
     except Exception as e:
-        logger.warning(f"Failed to build BM25 index: {e}")
-        logger.warning(f"构建 BM25 索引失败：{e}")
-        logger.debug(f"BM25 build error traceback:\n{traceback.format_exc()}")
+        logger.warning(f"Failed to build BM25 index: {e}", exc_info=True)
+        logger.warning(f"构建 BM25 索引失败：{e}", exc_info=True)
 
     yield
 

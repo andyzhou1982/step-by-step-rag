@@ -6,7 +6,6 @@ Uses SQLAlchemy ORM for database operations
 使用 SQLAlchemy ORM 进行数据库操作
 """
 
-import traceback
 from datetime import datetime
 from typing import List, Dict, Optional
 
@@ -110,8 +109,7 @@ class DocumentRegistryService:
                 await session.commit()
                 return True
         except Exception as e:
-            logger.error(f"Error adding document to registry: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
+            logger.error(f"Error adding document to registry: {e}", exc_info=True)
             return False
 
     async def get_document(self, doc_id: str) -> Optional[Dict]:
@@ -135,8 +133,7 @@ class DocumentRegistryService:
                     return doc.to_dict()
                 return None
         except Exception as e:
-            logger.error(f"Error getting document from registry: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
+            logger.error(f"Error getting document from registry: {e}", exc_info=True)
             return None
 
     async def list_documents(self) -> List[Dict]:
@@ -155,8 +152,7 @@ class DocumentRegistryService:
                 docs = result.scalars().all()
                 return [doc.to_dict() for doc in docs]
         except Exception as e:
-            logger.error(f"Error listing documents from registry: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
+            logger.error(f"Error listing documents from registry: {e}", exc_info=True)
             return []
 
     async def delete_document(self, doc_id: str) -> bool:
@@ -177,8 +173,7 @@ class DocumentRegistryService:
                 await session.commit()
                 return result.scalar_one_or_none() is not None
         except Exception as e:
-            logger.error(f"Error deleting document from registry: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
+            logger.error(f"Error deleting document from registry: {e}", exc_info=True)
             return False
 
 

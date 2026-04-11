@@ -10,7 +10,6 @@ Day 6 增强： 现在使用 SQLAlchemy ORM 替代原始 SQL
 """
 
 import uuid
-import traceback
 from datetime import datetime
 from typing import List, Dict, Optional
 
@@ -113,8 +112,7 @@ class QAHistoryService:
                 logger.info(f"QA record saved: {record.id}")
                 return str(record.id)
         except Exception as e:
-            logger.error(f"Error adding QA record: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
+            logger.error(f"Error adding QA record: {e}", exc_info=True)
             return None
 
     async def get_record(self, record_id: str) -> Optional[Dict]:
@@ -138,8 +136,7 @@ class QAHistoryService:
                     return record.to_dict()
                 return None
         except Exception as e:
-            logger.error(f"Error getting QA record: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
+            logger.error(f"Error getting QA record: {e}", exc_info=True)
             return None
 
     async def list_records(
@@ -194,8 +191,7 @@ class QAHistoryService:
                     "page_size": page_size
                 }
         except Exception as e:
-            logger.error(f"Error listing QA records: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
+            logger.error(f"Error listing QA records: {e}", exc_info=True)
             return {"records": [], "total": 0, "page": page, "page_size": page_size}
 
     async def delete_record(self, record_id: str) -> bool:
@@ -216,8 +212,7 @@ class QAHistoryService:
                 await session.commit()
                 return result.scalar_one_or_none() is not None
         except Exception as e:
-            logger.error(f"Error deleting QA record: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
+            logger.error(f"Error deleting QA record: {e}", exc_info=True)
             return False
 
     async def export_records(
@@ -260,8 +255,7 @@ class QAHistoryService:
 
                 return [record.to_dict() for record in records]
         except Exception as e:
-            logger.error(f"Error exporting QA records: {e}")
-            logger.debug(f"Traceback:\n{traceback.format_exc()}")
+            logger.error(f"Error exporting QA records: {e}", exc_info=True)
             return []
 
 

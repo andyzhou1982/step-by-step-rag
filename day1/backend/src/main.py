@@ -3,7 +3,6 @@ Main entry point for the RAG API
 RAG API 的主入口
 """
 
-import traceback
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
