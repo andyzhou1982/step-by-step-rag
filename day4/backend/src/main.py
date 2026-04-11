@@ -20,7 +20,6 @@ import traceback
 from routers import documents, chat
 from services.vector_store import vector_store
 from services.retrieval_service import retrieval_service
-from services.document_registry import document_registry
 from services.database_service import db_service
 from models.schemas import HealthResponse
 from config import settings, setup_logging, get_logger
@@ -47,7 +46,6 @@ async def lifespan(app: FastAPI):
     await db_service.connect()
     await db_service.create_tables()
     await vector_store.connect()
-    await document_registry.connect()
     logger.info("Databases connected.")
     logger.info("数据库已连接。")
 
@@ -76,7 +74,6 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down... Disconnecting from databases.")
     logger.info("正在关闭... 断开数据库连接。")
     await vector_store.disconnect()
-    await document_registry.disconnect()
     await db_service.disconnect()
     logger.info("Databases disconnected.")
     logger.info("数据库已断开。")

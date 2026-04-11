@@ -597,7 +597,7 @@ Day 4 已完成从原始 SQL 到 SQLAlchemy ORM 的迁移，与 Day 6+ 统一数
 ### 修改文件 / Modified Files
 
 - `backend/src/services/document_registry.py` - 原始 SQL → SQLAlchemy ORM
-- `backend/src/main.py` - 添加 db_service 初始化
+- `backend/src/main.py` - 添加 db_service 初始化；移除 document_registry 的 connect/disconnect 调用和 import
 - `backend/pyproject.toml` - 添加 `sqlalchemy[asyncio]>=2.0.0`
 
 ---
