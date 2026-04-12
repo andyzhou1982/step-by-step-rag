@@ -98,6 +98,10 @@ class Settings:
         self.host: str = os.getenv("HOST", "0.0.0.0")
         self.port: int = int(os.getenv("PORT", "8000"))
 
+        # Environment Configuration
+        # 环境配置
+        self.env: str = os.getenv("ENV", "development")
+
         # RAG Configuration
         # RAG 配置
         self.chunk_size: int = int(os.getenv("CHUNK_SIZE", "500"))

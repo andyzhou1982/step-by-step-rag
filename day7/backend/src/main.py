@@ -50,10 +50,11 @@ async def lifespan(app: FastAPI):
     # 连接到统一的数据库服务
     await db_service.connect()
 
-    # Create all tables if they don't exist
-    # 创建所有不存在的表
-    logger.info("Creating database tables...")
-    await db_service.create_tables()
+    # Create all tables if they don't exist (development only)
+    # 创建所有不存在的表（仅开发环境）
+    if settings.env == "development":
+        logger.info("Creating database tables...")
+        await db_service.create_tables()
 
     # Create default admin user if no users exist
     # 如果没有用户则创建默认管理员

@@ -38,7 +38,10 @@ async def lifespan(app: FastAPI):
     logger.info("正在启动... 连接数据库。")
     try:
         await db_service.connect()
-        await db_service.create_tables()
+        # Auto-create tables only in development environment
+        # 仅在开发环境自动创建表
+        if settings.env == "development":
+            await db_service.create_tables()
         await vector_store.connect()
         logger.info("Databases connected.")
         logger.info("数据库已连接。")
