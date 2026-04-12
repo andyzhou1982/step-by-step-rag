@@ -56,10 +56,9 @@ class VectorStoreService:
                 table_name=self._table_name,
                 vector_size=vector_size,
             )
-        except ProgrammingError:
-            # Table already exists, which is fine
-            # 表已存在，无需处理
-            pass
+        except ProgrammingError as e:
+            if "already exists" not in str(e):
+                raise
 
         # Create PGVectorStore
         # 创建 PGVectorStore
