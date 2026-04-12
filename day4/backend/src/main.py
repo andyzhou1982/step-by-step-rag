@@ -63,7 +63,7 @@ async def lifespan(app: FastAPI):
             logger.info("未找到用于 BM25 索引的文档。")
     except Exception as e:
         logger.warning(f"Failed to build BM25 index: {e}", exc_info=True)
-        logger.warning(f"构建 BM25 索引失败：{e}", exc_info=True)
+        logger.warning(f"构建 BM25 索引失败：{e}")
 
     yield
 
