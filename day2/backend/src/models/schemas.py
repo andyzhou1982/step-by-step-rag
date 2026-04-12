@@ -216,7 +216,10 @@ class HealthResponse(BaseModel):
     status: str
     # Database connection status
     # 数据库连接状态
-    database: str
+    db_status: str
+    # Vector store connection status
+    # 向量存储连接状态
+    vector_status: str
     # API version
     # API 版本
     version: str = "2.0.0"

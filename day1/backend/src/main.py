@@ -4,7 +4,7 @@ RAG API 的主入口
 """
 
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
@@ -111,18 +111,28 @@ async def root():
 
 
 @app.get("/health", response_model=HealthResponse)
-async def health_check():
+async def health_check(response: Response):
     """
     Health check endpoint
     健康检查端点
     """
-    # Check database connection
-    # 检查数据库连接
-    db_status = "connected" if vector_store._vectorstore else "disconnected"
+    # Check actual connection liveness
+    # 检查实际连接活性
+    db_healthy = await db_service.health_check()
+    vector_healthy = await vector_store.health_check()
+    all_healthy = db_healthy and vector_healthy
+
+    status = "healthy" if all_healthy else "unhealthy"
+    db_status = "connected" if db_healthy else "disconnected"
+    vector_status = "connected" if vector_healthy else "disconnected"
+
+    if not all_healthy:
+        response.status_code = 503
 
     return HealthResponse(
-        status="healthy",
-        database=db_status,
+        status=status,
+        db_status=db_status,
+        vector_status=vector_status,
         version="1.0.0"
     )
 

@@ -70,6 +70,18 @@ class DatabaseService:
             logger.error(f"Failed to create tables: {e}", exc_info=True)
             raise
 
+    async def health_check(self) -> bool:
+        """
+        Check if database connection is alive
+        检查数据库连接是否存活
+        """
+        try:
+            async with self._engine.begin() as conn:
+                await conn.execute(text("SELECT 1"))
+            return True
+        except Exception:
+            return False
+
     @property
     def engine(self):
         """Get the database engine / 获取数据库引擎"""

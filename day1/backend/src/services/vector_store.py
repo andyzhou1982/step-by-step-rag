@@ -218,6 +218,13 @@ class VectorStoreService:
         except Exception:
             return False
 
+    async def health_check(self) -> bool:
+        """
+        Check if vector store connection is alive
+        检查向量存储连接是否存活
+        """
+        return self._vectorstore is not None
+
 
 # Global vector store service instance
 # 全局向量存储服务实例

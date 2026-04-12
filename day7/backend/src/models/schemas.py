@@ -241,7 +241,8 @@ class HealthResponse(BaseModel):
     健康检查响应
     """
     status: str
-    database: str
+    db_status: str
+    vector_status: str
     version: str = "5.0.0"
     day: int = 5
     # Day 3: BM25 index status

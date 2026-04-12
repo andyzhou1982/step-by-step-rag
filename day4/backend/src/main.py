@@ -12,7 +12,7 @@ Day 4: Added unified logging system
 Day 4： 添加了统一的日志系统
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
@@ -122,7 +122,7 @@ A RAG (Retrieval-Augmented Generation) system with advanced retrieval strategies
 - `POST /chat/ask` - Ask question / 提问
 - `GET /chat/retrieval-config` - Get retrieval config / 获取检索配置
 """,
-    version="3.0.0",
+    version="4.0.0",
     lifespan=lifespan
 )
 
@@ -168,24 +168,34 @@ async def root():
 
 
 @app.get("/health", response_model=HealthResponse)
-async def health_check():
+async def health_check(response: Response):
     """
     Health check endpoint
     健康检查端点
     """
-    # Check database connection
-    # 检查数据库连接
-    db_status = "connected" if vector_store._vectorstore else "disconnected"
+    # Check actual connection liveness
+    # 检查实际连接活性
+    db_healthy = await db_service.health_check()
+    vector_healthy = await vector_store.health_check()
+    all_healthy = db_healthy and vector_healthy
 
-    # Day 3: Check BM25 index status
-    # Day 3： 检查 BM25 索引状态
+    status = "healthy" if all_healthy else "unhealthy"
+    db_status = "connected" if db_healthy else "disconnected"
+    vector_status = "connected" if vector_healthy else "disconnected"
+
+    # Day 3: Check BM25 index status (informational, not health-critical)
+    # Day 3： 检查 BM25 索引状态（信息性，不影响健康状态）
     bm25_indexed = retrieval_service._bm25_index._index is not None
 
+    if not all_healthy:
+        response.status_code = 503
+
     return HealthResponse(
-        status="healthy",
-        database=db_status,
-        version="3.0.0",
-        day=3,
+        status=status,
+        db_status=db_status,
+        vector_status=vector_status,
+        version="4.0.0",
+        day=4,
         bm25_indexed=bm25_indexed
     )
 

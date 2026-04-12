@@ -266,6 +266,22 @@ docker-compose down
 **修改文件 / Modified Files:**
 - `backend/src/services/vector_store.py` (添加 `import uuid`；修改 `store_document` 和 `delete_document`)
 
+### 健康检查端点修复
+
+**问题 / Issue:** `health_check` 端点 `status` 硬编码为 "healthy"；只检查 `vector_store` 不检查 `db_service`；访问私有属性 `_vectorstore`；无实际连接活性测试；`day=6` 硬编码错误。
+
+**修复 / Fix:**
+- `database_service.py`: 添加 `health_check()` 方法执行 `SELECT 1` 验证连接活性
+- `vector_store.py`: 添加公开的 `health_check()` 方法
+- `main.py`: 重写端点，分别检查两个服务，不健康时返回 HTTP 503；`audit_service.get_logs` 包裹在 try/except 中；修复 `day=6` → `day=7`
+- `schemas.py`: HealthResponse 字段从 `database: str` 拆分为 `db_status: str` + `vector_status: str`
+
+**修改文件 / Modified Files:**
+- `backend/src/services/database_service.py` (添加 `health_check` 方法)
+- `backend/src/services/vector_store.py` (添加 `health_check` 方法)
+- `backend/src/main.py` (重写健康检查端点，修复 day 值，安全化审计日志查询)
+- `backend/src/models/schemas.py` (HealthResponse 字段拆分)
+
 ---
 
 ## 7. 访问服务 / Access Services

@@ -5,6 +5,43 @@
   WHEN: 每个阶段完成或有重要进展时更新
 -->
 
+## Session: 2026-04-12 (Day 1-7 health_check 端点修复)
+
+### Bug 修复
+- **Status:** complete
+- **Started:** 2026-04-12
+- Bug 报告: `health_check` 端点存在 4 个问题:
+  1. `status` 硬编码为 "healthy"，即使连接断开也返回健康
+  2. 仅检查 vector_store，不检查 db_service
+  3. 访问私有属性 `vector_store._vectorstore`
+  4. 没有实际的连接存活测试
+- 根本原因: 健康检查端点仅做了简单的属性空值检查，没有实际验证数据库连接是否存活
+- 修复方案:
+  - 在 `database_service.py` 添加 `health_check()` 方法，执行 `SELECT 1` 验证连接
+  - 在 `vector_store.py` 添加 `health_check()` 方法，检查 `_vectorstore` 是否已初始化
+  - 重写 `main.py` 中的 `health_check` 端点：
+    - 调用 `db_service.health_check()` 和 `vector_store.health_check()` 进行实际存活检查
+    - 根据检查结果返回 "healthy" 或 "unhealthy"
+    - 不健康时返回 HTTP 503
+    - 添加 `from fastapi import Response` 以设置状态码
+  - Day 6/7: 将 `audit_service.get_logs` 调用包裹在 try/except 中，防止审计日志查询失败导致健康检查崩溃
+  - Day 7: 修复 `day=6` 硬编码为 `day=7`
+- Actions taken:
+  - **Day 1** (`database_service.py`): 添加 `health_check()` 方法
+  - **Day 1** (`vector_store.py`): 添加 `health_check()` 方法
+  - **Day 1** (`main.py`): 重写健康检查端点
+  - **Day 2-5**: 同 Day 1 修改，Day 3-5 额外保留 BM25 索引状态检查（信息性）
+  - **Day 6-7**: 同 Day 3-5 修改，额外将 `audit_service.get_logs` 包裹在 try/except 中
+- 额外修改: HealthResponse 字段从 `database: str` 拆分为 `db_status: str` + `vector_status: str`，分别展示两个服务的独立状态
+- 额外修改: Day 4/5 `version` 和 `day` 值从错误的 `"3.0.0"/3` 修正为正确的 `"4.0.0"/4` 和 `"5.0.0"/5`
+- Files modified:
+  - day1-day7/backend/src/services/database_service.py (添加 health_check 方法)
+  - day1-day7/backend/src/services/vector_store.py (添加 health_check 方法)
+  - day1-day7/backend/src/main.py (重写健康检查端点)
+  - day1-day7/backend/src/models/schemas.py (HealthResponse 字段拆分)
+
+---
+
 ## Session: 2026-04-12 (Day 1-7 文档删除失败修复)
 
 ### Bug 修复
