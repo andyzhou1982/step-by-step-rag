@@ -5,6 +5,29 @@
   WHEN: 每个阶段完成或有重要进展时更新
 -->
 
+## Session: 2026-04-12 (Day 1-7 vector_store 表存在性检查优化)
+
+### Bug 修复
+- **Status:** complete
+- **Started:** 2026-04-12
+- Bug 报告: `vector_store.py` 的 `connect` 方法使用 `try/except ProgrammingError: pass` 处理表已存在的情况，会吞掉所有 ProgrammingError（权限不足、连接断开等），不利于排查问题
+- 根本原因: PGEngine 的 `ainit_vectorstore_table` 使用 `CREATE TABLE`（不带 `IF NOT EXISTS`），表存在时抛异常；原代码无差别地忽略所有 ProgrammingError
+- 修复方案:
+  - 使用 `self._async_engine`（运行在 FastAPI 事件循环中）查询 `pg_tables` 检查表是否存在
+  - 不存在时才调用 `ainit_vectorstore_table`
+  - Day 1-2: 新增 `_async_engine` 属性及生命周期管理（connect/disconnect）
+  - Day 3-7: 复用已有的 `_async_engine`
+  - 移除 `ProgrammingError` import（不再需要异常捕获）
+- 技术要点: PGEngine 内部使用独立的事件循环（`_default_loop`），直接访问 `_pool.connect()` 会导致 "Future attached to a different loop" 错误。必须使用在 FastAPI 事件循环中创建的 `AsyncEngine`（通过 `create_async_engine`）
+- Actions taken:
+  - **Day 1-2** (`vector_store.py`): 添加 `_async_engine`；替换 try/except 为 `pg_tables` 查询；disconnect 中添加 `_async_engine.dispose()`
+  - **Day 3-5** (`vector_store.py`): 替换 try/except 为 `pg_tables` 查询；移除 `ProgrammingError` import
+  - **Day 6-7** (`vector_store.py`): 替换 try/except 为 `pg_tables` 查询；移除 `ProgrammingError` import
+- Files modified:
+  - day1-day7/backend/src/services/vector_store.py
+
+---
+
 ## Session: 2026-04-12 (Day 1-7 health_check 端点修复)
 
 ### Bug 修复

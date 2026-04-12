@@ -10,7 +10,8 @@ from langchain_core.documents import Document
 from config import settings
 from services.embedding import embedding_service
 from typing import List, Tuple, Optional
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 
 class VectorStoreService:
@@ -26,6 +27,7 @@ class VectorStoreService:
         """
         self._vectorstore: Optional[PGVectorStore] = None
         self._engine: Optional[PGEngine] = None
+        self._async_engine = None
         # Convert postgresql:// to postgresql+asyncpg:// for async support
         # 将 postgresql:// 转换为 postgresql+asyncpg:// 以支持异步
         self._connection_string = settings.database_url.replace(
@@ -41,6 +43,7 @@ class VectorStoreService:
         # Create PGEngine
         # 创建 PGEngine
         self._engine = PGEngine.from_connection_string(self._connection_string)
+        self._async_engine = create_async_engine(self._connection_string)
 
         # Get embedding dimension
         # 获取嵌入维度
@@ -48,14 +51,16 @@ class VectorStoreService:
 
         # Initialize table if not exists
         # 如果表不存在则初始化
-        try:
+        async with self._async_engine.connect() as conn:
+            exists = await conn.scalar(
+                text("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE tablename = :table)"),
+                {"table": self._table_name}
+            )
+        if not exists:
             await self._engine.ainit_vectorstore_table(
                 table_name=self._table_name,
                 vector_size=vector_size,
             )
-        except ProgrammingError as e:
-            if "already exists" not in str(e):
-                raise
 
         # Create PGVectorStore
         # 创建 PGVectorStore
@@ -72,8 +77,11 @@ class VectorStoreService:
         """
         if self._engine:
             await self._engine.close()
+        if self._async_engine:
+            await self._async_engine.dispose()
         self._vectorstore = None
         self._engine = None
+        self._async_engine = None
 
     @property
     def vectorstore(self) -> PGVectorStore:

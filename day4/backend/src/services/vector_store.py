@@ -19,7 +19,6 @@ from services.embedding import embedding_service
 from typing import List, Tuple, Optional, Dict
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.exc import ProgrammingError
 
 # Get logger for this module
 # 获取此模块的日志记录器
@@ -68,14 +67,16 @@ class VectorStoreService:
 
         # Initialize table if not exists
         # 如果表不存在则初始化
-        try:
+        async with self._async_engine.connect() as conn:
+            exists = await conn.scalar(
+                text("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE tablename = :table)"),
+                {"table": self._table_name}
+            )
+        if not exists:
             await self._engine.ainit_vectorstore_table(
                 table_name=self._table_name,
                 vector_size=vector_size,
             )
-        except ProgrammingError as e:
-            if "already exists" not in str(e):
-                raise
 
         # Create PGVectorStore
         # 创建 PGVectorStore
