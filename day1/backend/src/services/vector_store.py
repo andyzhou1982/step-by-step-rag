@@ -3,6 +3,7 @@ Vector store service using LangChain PGVectorStore
 使用 LangChain PGVectorStore 的向量存储服务
 """
 
+import uuid
 from langchain_postgres import PGVectorStore
 from langchain_postgres.v2.engine import PGEngine
 from langchain_core.documents import Document
@@ -103,12 +104,19 @@ class VectorStoreService:
             Document ID
             文档 ID
         """
+        # Generate a unique document ID for grouping all chunks
+        # 生成唯一的文档 ID 用于分组所有分块
+        # Fix: Use doc_id instead of PGVector's first chunk ID for reliable deletion
+        # 修复：使用 doc_id 而非 PGVector 的第一个 chunk ID，确保删除操作可靠
+        doc_id = str(uuid.uuid4())
+
         # Create Document objects with metadata
         # 创建带有元数据的 Document 对象
         documents = [
             Document(
                 page_content=chunk,
                 metadata={
+                    "doc_id": doc_id,
                     "filename": filename,
                     "chunk_index": i,
                 }
@@ -118,11 +126,11 @@ class VectorStoreService:
 
         # Add documents to vector store
         # 将文档添加到向量存储
-        ids = await self.vectorstore.aadd_documents(documents)
+        await self.vectorstore.aadd_documents(documents)
 
-        # Return first ID as document identifier
-        # 返回第一个 ID 作为文档标识符
-        return ids[0] if ids else ""
+        # Return the generated doc_id as document identifier
+        # 返回生成的 doc_id 作为文档标识符
+        return doc_id
 
     async def search_similar(
         self,
@@ -198,11 +206,13 @@ class VectorStoreService:
             Whether deletion was successful
             删除是否成功
         """
-        # Note: PGVector delete by filter
-        # 注意：PGVector 按过滤器删除
+        # Note: PGVector delete by filter on doc_id metadata
+        # 注意：PGVector 按 doc_id 元数据过滤删除
+        # Fix: Use doc_id filter instead of filename to match the generated UUID
+        # 修复：使用 doc_id 过滤器而非 filename，匹配生成的 UUID
         try:
             await self.vectorstore.adelete(
-                filter={"filename": document_id}
+                filter={"doc_id": document_id}
             )
             return True
         except Exception:

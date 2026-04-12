@@ -5,6 +5,35 @@
   WHEN: 每个阶段完成或有重要进展时更新
 -->
 
+## Session: 2026-04-12 (Day 1-7 文档删除失败修复)
+
+### Bug 修复
+- **Status:** complete
+- **Started:** 2026-04-12
+- Bug 报告: `delete_document` 使用 `filter={"filename": document_id}` 删除文档，但 `document_id` 是 UUID（store_document 返回的第一个 chunk ID），而 `filename` 存储的是原始文件名，导致过滤器永远匹配不到任何文档
+- 根本原因: `store_document` 返回 PGVector 生成的第一个 chunk UUID，`delete_document` 却用这个 UUID 去匹配 `filename` 字段
+- 修复方案:
+  - 在 `store_document` 中使用 `uuid.uuid4()` 生成独立的 `doc_id`
+  - 将 `doc_id` 添加到每个 chunk 的 metadata 中
+  - `store_document` 返回 `doc_id` 而非 `ids[0]`
+  - `delete_document` 改为 `filter={"doc_id": document_id}`
+- Actions taken:
+  - **Day 1** (`vector_store.py`): 添加 `import uuid`；`store_document` 生成 `doc_id` 并写入 metadata；`delete_document` 使用 `doc_id` 过滤
+  - **Day 2** (`vector_store.py`): 同上
+  - **Day 3** (`vector_store.py`): 同上
+  - **Day 4** (`vector_store.py`): 同上
+  - **Day 5** (`vector_store.py`): 同上
+  - **Day 6** (`vector_store.py`): 同上
+  - **Day 7** (`vector_store.py`): 同上
+- 注意事项:
+  - 已在数据库中存在的旧文档（没有 `doc_id` metadata）无法通过新逻辑删除
+  - 不影响 router 或 registry 代码（接口签名不变）
+  - `get_all_documents_for_bm25` 无需修改（它读 `filename` 不读 `doc_id`）
+- Files modified:
+  - day1-day7/backend/src/services/vector_store.py (修复 store_document 和 delete_document)
+
+---
+
 ## Session: 2026-04-11 (Day 1-5 数据库迁移到 SQLAlchemy ORM)
 
 ### 数据库迁移重构

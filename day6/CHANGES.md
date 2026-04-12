@@ -663,7 +663,22 @@ CREATE INDEX idx_qa_history_created_at ON qa_history(created_at);
 
 ---
 
-## 7. 后续改进 / Future Improvements (Day 7+)
+## 7. Bug 修复 / Bug Fix (2026-04-12)
+
+### 文档删除失败修复
+
+**问题 / Issue:** `vector_store.delete_document()` 使用 `filter={"filename": document_id}` 删除文档，但 `document_id` 是 UUID，`filename` 存储的是原始文件名，导致过滤器永远匹配不到任何文档，删除操作静默失败。
+
+**修复 / Fix:**
+- `store_document()`: 在创建文档前生成 `doc_id = str(uuid.uuid4())`，将 `doc_id` 写入每个 chunk 的 metadata，返回 `doc_id` 而非 PGVector 的 `ids[0]`
+- `delete_document()`: 过滤条件改为 `filter={"doc_id": document_id}`
+
+**修改文件 / Modified Files:**
+- `backend/src/services/vector_store.py` (添加 `import uuid`；修改 `store_document` 和 `delete_document`)
+
+---
+
+## 8. 后续改进 / Future Improvements (Day 7+)
 
 - [x] 用户数据持久化到 PostgreSQL ✅ (已完成)
 - [x] 审计日志持久化到 PostgreSQL ✅ (已完成)
