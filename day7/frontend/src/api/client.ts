@@ -32,6 +32,38 @@ const api = axios.create({
   },
 })
 
+// Fix: Add request interceptor to attach JWT token from localStorage
+// Without this, all authenticated endpoints (e.g., /audit/*) return 401.
+// 修复: 添加请求拦截器，从 localStorage 中附加 JWT token
+// 没有此拦截器，所有需要认证的端点（如 /audit/*）都会返回 401。
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+// Fix: Add response interceptor to handle 401 (expired/invalid token)
+// Clear stale credentials and force re-login.
+// 修复: 添加响应拦截器处理 401（过期/无效 token）
+// 清除过期凭据并强制重新登录。
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('user_info')
+      // Only redirect if not already on the login page
+      // 仅当不在登录页面时才重定向
+      if (window.location.pathname !== '/login') {
+        window.location.reload()
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
 // ==================== Types ====================
 // ==================== 类型定义 ====================
 
@@ -306,11 +338,21 @@ export async function askQuestionStream(
   onError?: (error: string) => void
 ): Promise<void> {
   try {
+    // Fix: Include Authorization header in fetch() calls too (not just axios)
+    // The streaming endpoint uses native fetch, which bypasses axios interceptors.
+    // 修复: 在 fetch() 调用中也包含 Authorization header（不仅仅在 axios 中）
+    // 流式端点使用原生 fetch，绕过了 axios 拦截器。
+    const token = localStorage.getItem('auth_token')
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
     const response = await fetch(`${API_BASE_URL}/chat/stream`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(request),
     })
 

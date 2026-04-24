@@ -5,6 +5,29 @@
   WHEN: 每个阶段完成或有重要进展时更新
 -->
 
+## Session: 2026-04-25 (Day 6/Day 7 前端 API 客户端缺少 JWT token)
+
+### Bug 修复
+- **Status:** complete
+- **Started:** 2026-04-25
+- Bug 报告: 进入审计页面时，前端报 "Failed to load audit data"，后端返回 401 Unauthorized
+- 错误日志: `GET /audit/logs?limit=100` 和 `GET /audit/summary?days=7` 均返回 401
+- 根本原因: Day 6 前端的 `client.ts` 创建了 axios 实例，但**没有请求拦截器**将 localStorage 中的 JWT token 附加到 `Authorization` header。LoginPanel 成功存储了 `auth_token`，但后续所有 API 请求都没有携带它。后端 `get_current_user` 依赖发现 Authorization header 缺失，直接返回 401。
+- 额外发现: `askQuestionStream` 使用原生 `fetch()` 而非 axios，同样不会自动携带 token
+- 影响范围: 这不仅影响 audit 端点，理论上所有使用 `Depends(get_current_user)` 或 `Depends(require_role(...))` 的后端端点都会受影响。documents 和 chat 端点恰好没有认证依赖所以没暴露问题。
+- 修复方案:
+  1. 在 axios 实例上添加 `request interceptor`，从 localStorage 读取 `auth_token` 并设置 `Authorization: Bearer <token>` header
+  2. 添加 `response interceptor`，当收到 401 响应时清除过期凭据并强制重新登录
+  3. 在 `askQuestionStream` 的 `fetch()` 调用中手动添加 `Authorization` header
+- Actions taken:
+  - **Day 6** (`frontend/src/api/client.ts`): 添加 axios 请求/响应拦截器 + 修复 fetch() Authorization header
+  - **Day 7** (`frontend/src/api/client.ts`): 同上
+- Files modified:
+  - day6/frontend/src/api/client.ts
+  - day7/frontend/src/api/client.ts
+
+---
+
 ## Session: 2026-04-12 (Day 1-7 vector_store 表存在性检查优化)
 
 ### Bug 修复
