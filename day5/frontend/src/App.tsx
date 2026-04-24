@@ -117,7 +117,9 @@ function App() {
             onRefresh={() => setRefreshKey(prev => prev + 1)}
           />
         )}
-        {activeTab === 'chat' && <ChatInterface />}
+        <div className={activeTab !== 'chat' ? 'hidden' : ''}>
+          <ChatInterface />
+        </div>
         {activeTab === 'evaluation' && (
           <div className="space-y-6">
             {/* Day 5: Standalone evaluation page */}

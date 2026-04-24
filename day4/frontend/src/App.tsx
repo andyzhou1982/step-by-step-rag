@@ -109,7 +109,9 @@ function App() {
             onRefresh={() => setRefreshKey(prev => prev + 1)}
           />
         )}
-        {activeTab === 'chat' && <ChatInterface />}
+        <div className={activeTab !== 'chat' ? 'hidden' : ''}>
+          <ChatInterface />
+        </div>
       </main>
 
       {/* Footer */}

@@ -211,7 +211,11 @@ function App() {
             onRefresh={() => setRefreshKey(prev => prev + 1)}
           />
         )}
-        {activeTab === 'chat' && <ChatInterface />}
+        {/* Fix: Use CSS hidden instead of conditional rendering to preserve ChatInterface state across tab switches */}
+        {/* 修复： 使用 CSS 隐藏替代条件渲染，保持 ChatInterface 在标签切换时的状态 */}
+        <div className={activeTab !== 'chat' ? 'hidden' : ''}>
+          <ChatInterface />
+        </div>
         {activeTab === 'evaluation' && (
           <div className="space-y-6">
             {/* Day 5: Standalone evaluation page */}

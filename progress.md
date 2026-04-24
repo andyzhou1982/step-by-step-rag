@@ -5,6 +5,23 @@
   WHEN: 每个阶段完成或有重要进展时更新
 -->
 
+## Session: 2026-04-25 (Day 6/Day 7 Chat 标签切换丢失会话状态)
+
+### Bug 修复
+- **Status:** complete
+- **Started:** 2026-04-25
+- Bug 报告: Day 6 前端从标签"Chat/问答"切换到其他标签之后再切换回来，原来的会话记录消失了
+- 根本原因: `App.tsx` 中 ChatInterface 使用条件渲染 `{activeTab === 'chat' && <ChatInterface />}`，当 activeTab 不是 'chat' 时组件被卸载，其内部 state（messages、conversationId 等）全部丢失。切回来时重新创建新实例，状态初始化为空
+- 修复方案: 将 ChatInterface 的渲染方式从条件渲染改为 CSS 隐藏（`display: none`），保持组件始终挂载，状态在标签切换时得以保留
+- Actions taken:
+  - **Day 6** (`frontend/src/App.tsx`): 将条件渲染改为 `<div className={activeTab !== 'chat' ? 'hidden' : ''}>` 包裹
+  - **Day 7** (`frontend/src/App.tsx`): 同上修复
+- Files modified:
+  - day6/frontend/src/App.tsx
+  - day7/frontend/src/App.tsx
+
+---
+
 ## Session: 2026-04-25 (Day 6/Day 7 前端 API 客户端缺少 JWT token)
 
 ### Bug 修复
