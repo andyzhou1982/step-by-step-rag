@@ -138,15 +138,9 @@ class DocumentRegistryService:
             文档字典或 None
         """
         try:
-            import uuid
-            doc_uuid = uuid.UUID(doc_id)
-        except ValueError:
-            return None
-
-        try:
             async with db_service.session_factory() as session:
                 result = await session.execute(
-                    select(DocumentRegistry).where(DocumentRegistry.id == doc_uuid)
+                    select(DocumentRegistry).where(DocumentRegistry.id == doc_id)
                 )
                 doc = result.scalar_one_or_none()
 
@@ -216,15 +210,9 @@ class DocumentRegistryService:
             删除是否成功
         """
         try:
-            import uuid
-            doc_uuid = uuid.UUID(doc_id)
-        except ValueError:
-            return False
-
-        try:
             async with db_service.session_factory() as session:
                 result = await session.execute(
-                    delete(DocumentRegistry).where(DocumentRegistry.id == doc_uuid).returning(DocumentRegistry.id)
+                    delete(DocumentRegistry).where(DocumentRegistry.id == doc_id).returning(DocumentRegistry.id)
                 )
                 await session.commit()
                 return result.scalar_one_or_none() is not None
