@@ -703,24 +703,35 @@
 -->
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 8: Day 7 生产优化完成 - 项目完成！ |
-| Where am I going? | 项目已完成，可以交付使用 |
-| What's the goal? | 创建分阶段 RAG 教程项目，从核心功能到完整系统 - 已达成 |
-| What have I learned? | 见 findings.md |
-| What have I done? | Day 1-7 全部完成，实现了完整的企业级 RAG 系统 |
+| Where am I? | Phase 1 (传统 RAG Day 1-7) 已完成，Phase 2 (三架构融合 Day 8-13) 待启动 |
+| Where am I going? | Day 8: LLM Wiki 知识编译核心 |
+| What's the goal? | 在传统 RAG 基础上，新增 LLM Wiki 和 GraphRAG，最终通过智能路由统一入口 |
+| What have I learned? | 传统 RAG 全流程已完成；三种 RAG 优劣对比已分析（见 findings.md Phase 2） |
+| What have I done? | Day 1-7 传统 RAG 全部完成；Phase 2 规划文件已更新 |
 
 ## Next Actions
 <!--
   下一步行动项
 -->
-1. 项目已完成！可选后续改进：
-   - Kubernetes 部署配置
-   - 水平自动扩展
-   - 日志聚合（ELK/Loki）
-   - 分布式追踪（Jaeger）
-   - APM 集成（Prometheus/Grafana）
-   - 蓝绿部署
-   - CI/CD 管道配置
+1. **Day 8**: LLM Wiki 知识编译核心 — Wiki 页面数据模型 + 生成服务 + 语义检索
+2. **Day 9**: LLM Wiki 一致性与维护 — 一致性检查 + 交叉引用 + 版本管理
+3. **Day 10**: GraphRAG 知识图谱构建 — 实体/关系抽取 + 图存储 + 社区检测
+4. **Day 11**: GraphRAG 图检索与推理 — 图遍历 + 多跳推理 + 子图提取
+5. **Day 12**: 智能路由统一入口 — 查询分析 + 路由策略 + 结果融合
+6. **Day 13**: 集成与对比仪表盘 — 统一 UI + 三架构对比 + 成本分析
+
+## Daily Progress Plan (Phase 2)
+<!--
+  Phase 2 每日计划
+-->
+| Day | Plan | Status | Key Deliverables |
+|-----|------|--------|------------------|
+| Day 8 | LLM Wiki - 知识编译核心 | pending | Wiki 生成 + 存储 + 检索 |
+| Day 9 | LLM Wiki - 一致性与维护 | pending | 一致性检查 + 版本管理 + 增量更新 |
+| Day 10 | GraphRAG - 知识图谱构建 | pending | 实体/关系抽取 + 图存储 + 可视化 |
+| Day 11 | GraphRAG - 图检索与推理 | pending | 图遍历 + 多跳推理 + 路径可视化 |
+| Day 12 | 智能路由 - 统一入口 | pending | 查询分析 + LLM 路由 + 结果融合 |
+| Day 13 | 集成与对比仪表盘 | pending | 统一 UI + 对比模式 + 部署配置 |
 
 ---
 *Update after completing each phase or encountering errors*
