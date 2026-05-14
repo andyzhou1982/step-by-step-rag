@@ -5,6 +5,73 @@
   WHEN: 每个阶段完成或有重要进展时更新
 -->
 
+## Session: 2026-05-14 (Day 6-8 DocumentRegistry ID 类型不匹配)
+
+### Bug 修复
+- **Status:** complete
+- **Started:** 2026-05-14
+- Bug 报告: 删除文档时报错 `operator does not exist: character varying = uuid`
+- 根本原因: `document_registry` 表的 `id` 列在数据库中实际是 `VARCHAR` 类型（Day 3 时创建），但 Day 6 的 ORM 模型错误地定义为 `UUID(as_uuid=True)`。`create_all` 不会修改已存在的表，导致 ORM 查询时类型不匹配
+- 修复方案:
+  - 将 `DocumentRegistry.id` 从 `Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)` 改为 `Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)`
+  - 移除 `document_registry.py` 中 `get_document` 和 `delete_document` 的 `uuid.UUID(doc_id)` 转换，直接用字符串 `doc_id` 查询
+- Actions taken:
+  - **Day 6** (`models/database.py`): 修改 DocumentRegistry.id 类型
+  - **Day 6** (`services/document_registry.py`): 移除 uuid 转换，直接用字符串查询
+  - **Day 7** (`models/database.py`): 同 Day 6 修改
+  - **Day 7** (`services/document_registry.py`): 同 Day 6 修改
+  - **Day 8** (`models/database.py`): 同 Day 6 修改
+  - **Day 8** (`services/document_registry.py`): 同 Day 6 修改
+- 影响范围: Day 1-5 无此问题（它们的 DocumentRegistry.id 已是 String(255)，且 document_registry.py 无 uuid 转换）
+- Files modified:
+  - day6/backend/src/models/database.py
+  - day6/backend/src/services/document_registry.py
+  - day7/backend/src/models/database.py
+  - day7/backend/src/services/document_registry.py
+  - day8/backend/src/models/database.py
+  - day8/backend/src/services/document_registry.py
+
+---
+
+## Session: 2026-05-14 (Day 8: LLM Wiki - Knowledge Compilation)
+
+### Phase 2 开始: Day 8 实现
+- **Status:** complete
+- **Started:** 2026-05-14
+- Actions taken:
+  - 复制 day7 → day8 作为基础
+  - 新增 Wiki 数据模型 (database.py): WikiPage + WikiLink ORM 表
+  - 新增概念提取服务 (concept_extractor.py): LLM 提取 + 合并去重
+  - 新增 Wiki 生成服务 (wiki_generator.py): 概念 → 结构化 Markdown 页面
+  - 新增 Wiki 存储服务 (wiki_store.py): CRUD + 语义搜索 + 自动交叉引用
+  - 新增 Wiki API 路由 (routers/wiki.py): 7 个 REST 端点
+  - 更新 main.py 注册 Wiki 路由，版本 8.0.0
+  - 更新 config.py 添加 6 个 Wiki 配置参数
+  - 新增 WikiBrowser.tsx 前端组件（统计、搜索、过滤、详情、生成）
+  - 更新 App.tsx 添加 "Wiki / 知识库" 标签页
+  - 更新 client.ts 添加 Wiki API 类型和函数
+  - 前端编译验证通过 (npm run build ✓)
+  - 创建 CHANGES.md 文档
+- Files created:
+  - day8/backend/src/services/concept_extractor.py
+  - day8/backend/src/services/wiki_generator.py
+  - day8/backend/src/services/wiki_store.py
+  - day8/backend/src/routers/wiki.py
+  - day8/frontend/src/components/WikiBrowser.tsx
+- Files modified:
+  - day8/backend/src/models/database.py
+  - day8/backend/src/models/schemas.py
+  - day8/backend/src/main.py
+  - day8/backend/src/config.py
+  - day8/frontend/src/App.tsx
+  - day8/frontend/src/api/client.ts
+  - day8/frontend/package.json
+  - day8/CHANGES.md
+  - task_plan.md
+  - progress.md
+
+---
+
 ## Session: 2026-04-25 (Day 6/Day 7 Chat 标签切换丢失会话状态)
 
 ### Bug 修复
@@ -703,18 +770,17 @@
 -->
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 1 (传统 RAG Day 1-7) 已完成，Phase 2 (三架构融合 Day 8-13) 待启动 |
-| Where am I going? | Day 8: LLM Wiki 知识编译核心 |
-| What's the goal? | 在传统 RAG 基础上，新增 LLM Wiki 和 GraphRAG，最终通过智能路由统一入口 |
-| What have I learned? | 传统 RAG 全流程已完成；三种 RAG 优劣对比已分析（见 findings.md Phase 2） |
-| What have I done? | Day 1-7 传统 RAG 全部完成；Phase 2 规划文件已更新 |
+| Where am I? | Phase 2 Day 8 (LLM Wiki 知识编译核心) 已完成，Day 9 待开始 |
+| Where am I going? | Day 9: LLM Wiki 一致性与维护 |
+| What's the goal? | 在传统 RAG + Wiki 编译基础上，添加一致性与维护能力 |
+| What have I learned? | Day 8 完成了 Wiki 页面生成、存储、语义搜索、交叉引用全流程 |
+| What have I done? | Day 8 LLM Wiki 知识编译核心已全部完成 |
 
 ## Next Actions
 <!--
   下一步行动项
 -->
-1. **Day 8**: LLM Wiki 知识编译核心 — Wiki 页面数据模型 + 生成服务 + 语义检索
-2. **Day 9**: LLM Wiki 一致性与维护 — 一致性检查 + 交叉引用 + 版本管理
+1. **Day 9**: LLM Wiki 一致性与维护 — 一致性检查 + 交叉引用 + 版本管理
 3. **Day 10**: GraphRAG 知识图谱构建 — 实体/关系抽取 + 图存储 + 社区检测
 4. **Day 11**: GraphRAG 图检索与推理 — 图遍历 + 多跳推理 + 子图提取
 5. **Day 12**: 智能路由统一入口 — 查询分析 + 路由策略 + 结果融合
@@ -726,7 +792,7 @@
 -->
 | Day | Plan | Status | Key Deliverables |
 |-----|------|--------|------------------|
-| Day 8 | LLM Wiki - 知识编译核心 | pending | Wiki 生成 + 存储 + 检索 |
+| Day 8 | LLM Wiki - 知识编译核心 | complete | Wiki 生成 + 存储 + 语义检索 + 交叉引用 |
 | Day 9 | LLM Wiki - 一致性与维护 | pending | 一致性检查 + 版本管理 + 增量更新 |
 | Day 10 | GraphRAG - 知识图谱构建 | pending | 实体/关系抽取 + 图存储 + 可视化 |
 | Day 11 | GraphRAG - 图检索与推理 | pending | 图遍历 + 多跳推理 + 路径可视化 |

@@ -127,15 +127,15 @@ Phase 2: 三种 RAG 架构融合 (Day 8-13)
 ---
 ## Phase 2: 三种 RAG 架构融合
 
-### Day 8: LLM Wiki - 知识编译核心 (Knowledge Compilation) 🔲
-- [ ] Wiki 页面数据模型设计（wiki_pages 表、wiki_links 表）
-- [ ] Wiki 页面生成服务（LLM 阅读文档 → 提取概念 → 生成结构化 Wiki 页面）
-- [ ] 概念提取与去重（实体识别、概念聚类）
-- [ ] Wiki 页面存储（PostgreSQL + 向量索引）
-- [ ] Wiki 页面语义检索（基于 Embedding 的相似度搜索）
-- [ ] 前端：Wiki 页面浏览与搜索界面
-- [ ] 文档：CHANGES.md 核心修改说明
-- **Status:** pending
+### Day 8: LLM Wiki - 知识编译核心 (Knowledge Compilation) ✅
+- [x] Wiki 页面数据模型设计（wiki_pages 表、wiki_links 表）
+- [x] Wiki 页面生成服务（LLM 阅读文档 → 提取概念 → 生成结构化 Wiki 页面）
+- [x] 概念提取与去重（实体识别、概念聚类）
+- [x] Wiki 页面存储（PostgreSQL + 向量索引）
+- [x] Wiki 页面语义检索（基于 Embedding 的相似度搜索）
+- [x] 前端：Wiki 页面浏览与搜索界面
+- [x] 文档：CHANGES.md 核心修改说明
+- **Status:** complete
 - **Goal:** 实现文档 → Wiki 页面的自动编译生成和语义检索
 
 ### Day 9: LLM Wiki - 一致性与维护 (Consistency & Maintenance) 🔲
